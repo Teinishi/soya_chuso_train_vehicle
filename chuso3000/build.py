@@ -23,7 +23,12 @@ vehicle_tc.remove_component(position=(2, -2, 1))
 # 車軸ペインタブルの名前を変更
 vehicle_tc.set_custom_name("TRAIN1", custom_name="TRAIN4")
 vehicle_tc.set_custom_name("TRAIN2", custom_name="TRAIN3")
+# ARCダイヤルの名前を変更
 vehicle_tc.set_custom_name("TRAIN1_ARC", custom_name="TRAIN4_ARC")
+# キーパッドの名前を変更
+vehicle_tc.set_custom_name("TRAIN1_H1", custom_name="TRAIN4_H1")
+vehicle_tc.set_custom_name("TRAIN1_H2", custom_name="TRAIN4_H2")
+vehicle_tc.set_custom_name("TRAIN1_H3", custom_name="TRAIN4_H3")
 
 # マイコンプロパティ
 vehicle_mc.set_microprocessor_property(
