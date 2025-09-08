@@ -10,6 +10,7 @@ class VehicleComponent:
     _element: ET.Element
     _body: ET.Element
     _position: Vector3i
+    _d: str
     _r: Matrix3i
     _custom_name: str | None
     _microprocessor_name: str | None
@@ -18,6 +19,7 @@ class VehicleComponent:
         self._element = element
         self._body = body
 
+        self._d = element.get("d", "01_block")
         o = element.find("./o")
         r = o.get("r")
         self._r = Matrix3i(r) if r is not None else Matrix3i.identity()
@@ -38,6 +40,9 @@ class VehicleComponent:
 
     def get_body(self) -> ET.Element:
         return self._body
+
+    def get_definition_name(self) -> str:
+        return self._d
 
     def get_position(self) -> Vector3i:
         return self._position

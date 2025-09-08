@@ -3,7 +3,7 @@ from lib.vehicle import Vehicle
 
 DIRNAME = os.path.dirname(__file__)
 DIST_PATH = os.path.join(os.path.dirname(DIRNAME), "dist")
-BASE_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_base.xml")
+BASE_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_TM2_JSMS_base.xml")
 MC_DIFF_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_Mc_diff.xml")
 TC_DIFF_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_Tc_diff.xml")
 MC_OUTPUT = os.path.join(DIST_PATH, "CHUSO3000_TM2_JSMS_Mc.xml")
@@ -110,6 +110,8 @@ vehicle_tc.set_microprocessor_property(
     "Reverser Default", "Front", microprocessor_name="Master Controller")
 
 # TODO: Tc車の前後選択スイッチをデフォルト前に
+
+# TODO: Tc車を全選択して180度回転
 
 # 書き出し
 vehicle_mc.save(MC_OUTPUT)

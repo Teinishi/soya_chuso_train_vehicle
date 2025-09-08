@@ -1,7 +1,10 @@
 from collections import defaultdict
 import itertools
+import shutil
 import typing
 import copy
+import os
+import glob
 from xml.etree import ElementTree as ET
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
@@ -56,6 +59,7 @@ class LogicNodeLink:
 
 
 class Vehicle:
+    _component_mods: list[str]
     _escape_multiline_attrs: EscapeMultilineAttributes
     _root: ET.Element
     _bodies: list[ET.Element]
@@ -71,9 +75,12 @@ class Vehicle:
     def from_file(path: str) -> typing.Self:
         with open(path, encoding="utf-8") as f:
             xml_text = f.read()
-        return Vehicle(xml_text)
+        v = Vehicle(xml_text)
+        v._component_mods.append(os.path.splitext(path)[0])
+        return v
 
     def __init__(self, xml_text: str):
+        self._component_mods = []
         self._escape_multiline_attrs = EscapeMultilineAttributes()
         self._root = ET.fromstring(
             self._escape_multiline_attrs.escape(xml_text))
@@ -164,9 +171,36 @@ class Vehicle:
         return copy.deepcopy(self)
 
     def include_vehicle(self, other: typing.Self):
+        self._component_mods += other._component_mods
         self._add_vehicle(other._root)
 
     def save(self, path):
+        # .bin ファイルをリストアップ
+        mod_components: dict[str, str] = {}
+        for mods_source in self._component_mods:
+            if not os.path.isdir(mods_source):
+                continue
+            for file in glob.glob("*.bin", root_dir=mods_source):
+                mod_components[os.path.splitext(file)[0]] = mods_source
+
+        # 使用中の .bin を調べる
+        active_mod_components: set[tuple[str, str]] = set()
+        for component in self._components:
+            d = component.get_definition_name()
+            if d in mod_components:
+                active_mod_components.add((mod_components[d], d))
+
+        # .bin をコピー
+        if len(active_mod_components) > 0:
+            mods_dest = os.path.splitext(path)[0]
+            os.makedirs(mods_dest, exist_ok=True)
+            for (mods_source, name) in active_mod_components:
+                shutil.copy(
+                    os.path.join(mods_source, f"{name}.bin"),
+                    os.path.join(mods_dest, f"{name}.bin")
+                )
+
+
         with open(path, "w", encoding="utf-8") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(self._escape_multiline_attrs.restore(
