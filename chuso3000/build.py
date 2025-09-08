@@ -32,9 +32,9 @@ vehicle_tc.set_custom_name("TRAIN1_H3", custom_name="TRAIN4_H3")
 
 # マイコンプロパティ
 vehicle_mc.set_microprocessor_property(
-    "Running Sound", "Motor", microprocessor_name="ME SiC Sound")
+    "Motor", "yes", microprocessor_name="ME SiC Sound")
 vehicle_tc.set_microprocessor_property(
-    "Running Sound", "Normal", microprocessor_name="ME SiC Sound")
+    "Motor", "no", microprocessor_name="ME SiC Sound")
 
 vehicle_mc.set_microprocessor_property(
     "Car Type", "3001", microprocessor_name="CHUSO 3000 Main Curcit")
