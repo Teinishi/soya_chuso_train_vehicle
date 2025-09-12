@@ -1,11 +1,12 @@
 import re
 import random
 import string
+import html
 
 # 出力後の属性値の改行を保持するための処理
 
 
-def random_string(length: int) -> str:
+def _random_string(length: int) -> str:
     chars = string.ascii_letters + string.digits
     return "".join(random.choices(chars, k=length))
 
@@ -26,16 +27,25 @@ class EscapeMultilineAttributes:
         def repl(m: re.Match[str]) -> str:
             content = m.group("content1") or m.group("content2")
             while True:
-                identifier = f'"{random_string(16)}"'
+                identifier = _random_string(16)
                 if identifier not in self.items and identifier not in xml_text:
                     break
             self.items[identifier] = content
-            return f'={identifier}'
+            return f'="{identifier}"'
 
         return _pattern.sub(repl, xml_text)
 
     def restore(self, xml_text: str) -> str:
         # ランダム文字列のIDを戻す
         for k, v in self.items.items():
-            xml_text = xml_text.replace(k, v, 1)
+            xml_text = xml_text.replace(f'"{k}"', v, 1)
         return xml_text
+
+    def restore_value(self, value_text: str, unescape=True) -> str:
+        if value_text in self.items:
+            value = self.items[value_text][1:-1]
+            if unescape:
+                value = html.unescape(value)
+            return value
+        else:
+            return value_text
