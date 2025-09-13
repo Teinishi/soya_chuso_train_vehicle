@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
+from lib.resolve_script import resolve_script
 
 Tuple3i = tuple[int, int, int]
 Box = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
@@ -291,3 +292,12 @@ class Vehicle:
 
         bodies = self._root.find("./bodies")
         bodies.remove(body2)
+
+    def resolve_lua(self):
+        for m in itertools.chain.from_iterable(self._microprocessor_name_map.values()):
+            for o in m._element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
+                text = self._escape_multiline_attrs.restore_value(o.get("script"))
+                script = resolve_script(text, leave_params=True)
+                if script is not None:
+                    identifier = self._escape_multiline_attrs.add(script)
+                    o.set("script", identifier)

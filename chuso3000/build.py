@@ -114,11 +114,14 @@ vehicle_tc.set_microprocessor_property(
 vehicle_tc.set_microprocessor_property(
     "Reverser Default", "Front", microprocessor_name="Master Controller")
 
-# TODO: Tc車の前後選択スイッチをデフォルト前に
+# Tc車の前後選択スイッチをデフォルト前に
+vehicle_tc.set_microprocessor_property("Default", "Front", microprocessor_name="Direction Switch")
 
 # TODO: Tc車を全選択して180度回転
+
+vehicle_mc.resolve_lua()
+vehicle_tc.resolve_lua()
 
 # 書き出し
 vehicle_mc.save(MC_OUTPUT)
 vehicle_tc.save(TC_OUTPUT)
-exit(0)
