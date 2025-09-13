@@ -119,9 +119,8 @@ vehicle_tc.set_microprocessor_property("Default", "Front", microprocessor_name="
 
 # TODO: Tc車を全選択して180度回転
 
+# 書き出し
 vehicle_mc.resolve_lua()
 vehicle_tc.resolve_lua()
-
-# 書き出し
 vehicle_mc.save(MC_OUTPUT)
 vehicle_tc.save(TC_OUTPUT)
