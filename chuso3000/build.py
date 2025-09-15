@@ -1,5 +1,6 @@
 import os
 from lib.vehicle import Vehicle
+from lib.script_resolver import ScriptResolver
 
 DIRNAME = os.path.dirname(__file__)
 DIST_PATH = os.path.join(os.path.dirname(DIRNAME), "dist")
@@ -10,8 +11,8 @@ MC_OUTPUT = os.path.join(DIST_PATH, "CHUSO3000_TM2_JSMS_Mc.xml")
 TC_OUTPUT = os.path.join(DIST_PATH, "CHUSO3000_TM2_JSMS_Tc.xml")
 
 # ビークルを読み込み
-vehicle_mc = Vehicle.from_file(BASE_VEHICLE)
-vehicle_tc = Vehicle.from_file(BASE_VEHICLE)
+vehicle_mc: Vehicle = Vehicle.from_file(BASE_VEHICLE)
+vehicle_tc: Vehicle = Vehicle.from_file(BASE_VEHICLE)
 
 # Tc車のパンタグラフを削除
 vehicle_tc.remove_components(box=((-4, 13, -36), (4, 16, -26)))
@@ -115,12 +116,15 @@ vehicle_tc.set_microprocessor_property(
     "Reverser Default", "Front", microprocessor_name="Master Controller")
 
 # Tc車の前後選択スイッチをデフォルト前に
-vehicle_tc.set_microprocessor_property("Default", "Front", microprocessor_name="Direction Switch")
+vehicle_tc.set_microprocessor_property(
+    "Default", "Front", microprocessor_name="Direction Switch")
 
 # TODO: Tc車を全選択して180度回転
 
 # 書き出し
-vehicle_mc.resolve_lua()
-vehicle_tc.resolve_lua()
+resolver = ScriptResolver()
+vehicle_mc.resolve_lua_script(resolver)
+vehicle_tc.resolve_lua_script(resolver)
+
 vehicle_mc.save(MC_OUTPUT)
 vehicle_tc.save(TC_OUTPUT)

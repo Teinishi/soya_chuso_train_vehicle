@@ -9,7 +9,7 @@ from xml.etree import ElementTree as ET
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
-from lib.resolve_script import resolve_script
+from lib.script_resolver import ScriptResolver
 
 Tuple3i = tuple[int, int, int]
 Box = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
@@ -201,7 +201,6 @@ class Vehicle:
                     os.path.join(mods_dest, f"{name}.bin")
                 )
 
-
         with open(path, "w", encoding="utf-8") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(self._escape_multiline_attrs.restore(
@@ -293,11 +292,15 @@ class Vehicle:
         bodies = self._root.find("./bodies")
         bodies.remove(body2)
 
-    def resolve_lua(self):
+    def resolve_lua_script(self, resolver: ScriptResolver = None):
+        if resolver is None:
+            resolver = ScriptResolver()
+
         for m in itertools.chain.from_iterable(self._microprocessor_name_map.values()):
             for o in m._element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
-                text = self._escape_multiline_attrs.restore_value(o.get("script"))
-                script = resolve_script(text, leave_params=True)
+                text = self._escape_multiline_attrs.restore_value(
+                    o.get("script"))
+                script = resolver.resolve_script(text, leave_params=True)
                 if script is not None:
                     identifier = self._escape_multiline_attrs.add(script)
                     o.set("script", identifier)
