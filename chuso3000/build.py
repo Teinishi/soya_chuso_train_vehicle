@@ -68,9 +68,9 @@ vehicle_tc.set_microprocessor_property(
     "Direction", "Inbound", microprocessor_name="Passenger Guidance")
 
 vehicle_mc.set_microprocessor_property(
-    "Direction", "Outbound", microprocessor_name="Driver Monitor")
+    "Direction", "Outbound", microprocessor_name="Operation Manager")
 vehicle_tc.set_microprocessor_property(
-    "Direction", "Inbound", microprocessor_name="Driver Monitor")
+    "Direction", "Inbound", microprocessor_name="Operation Manager")
 
 vehicle_mc.set_microprocessor_property(
     "Direction", "Outbound", microprocessor_name="JSMS Transponder")
