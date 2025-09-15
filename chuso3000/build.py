@@ -43,19 +43,19 @@ vehicle_tc.set_microprocessor_property(
     "Car Type", "3101", microprocessor_name="CHUSO 3000 Main Curcit")
 
 vehicle_mc.set_microprocessor_property(
-    "Powered Axle", "Both", microprocessor_name="Train")
+    "Powered Axle", "Both", microprocessor_name="NITS Gateway")
 vehicle_tc.set_microprocessor_property(
-    "Powered Axle", "None", microprocessor_name="Train")
+    "Powered Axle", "None", microprocessor_name="NITS Gateway")
 
 vehicle_mc.set_microprocessor_property(
-    "Rear Pantograph", "Single arm inner", microprocessor_name="Train")
+    "Rear Pantograph", "Single arm inner", microprocessor_name="NITS Gateway")
 vehicle_tc.set_microprocessor_property(
-    "Rear Pantograph", "None", microprocessor_name="Train")
+    "Rear Pantograph", "None", microprocessor_name="NITS Gateway")
 
 vehicle_mc.set_microprocessor_property(
-    "Car No.", "2", microprocessor_name="Train")
+    "Car No.", "2", microprocessor_name="NITS Gateway")
 vehicle_tc.set_microprocessor_property(
-    "Car No.", "1", microprocessor_name="Train")
+    "Car No.", "1", microprocessor_name="NITS Gateway")
 
 vehicle_mc.set_microprocessor_property(
     "Car Number", "2", microprocessor_name="Passenger Guidance")
