@@ -123,8 +123,9 @@ vehicle_tc.set_microprocessor_property(
 
 # 書き出し
 resolver = ScriptResolver()
-vehicle_mc.resolve_lua_script(resolver)
-vehicle_tc.resolve_lua_script(resolver)
+build_params = {"is_jsms": True}
+vehicle_mc.resolve_lua_script(build_params, resolver)
+vehicle_tc.resolve_lua_script(build_params, resolver)
 
 vehicle_mc.save(MC_OUTPUT)
 vehicle_tc.save(TC_OUTPUT)
