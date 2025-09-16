@@ -19,6 +19,8 @@
 
 ## ビークル開発ガイド
 
+ファイルパスを書くときは、リポジトリのルートからの相対パスを書いてください。
+
 ### 完成品ビークルを生成
 
 -   build.bat を実行
@@ -36,13 +38,13 @@
 
 -   必要なら、extract_lua.py を用いてビークルデータから Lua スクリプトをすべて抽出し確認
 -   Lua ファイルを lua/{ビークルフォルダ名}/{Lua ファイル名} に作成
--   Stormworks 上で Lua コードの代わりに `-- @use {ビークルフォルダ名}/{Luaファイル名}` と記述
+-   Stormworks 上で Lua コードの代わりに `-- @use lua/{ビークルフォルダ名}/{Luaファイル名}` と記述
     -   @use がある Lua は Lua ブロック丸ごと置換するため、ベースビークルの Lua も機能するようにしておきたい場合は残してもよい
 
 ### Lua の定数等を別ファイルに分離
 
 -   lua/ 以下に、実行すると JSON 文字列を出力する .py ファイルを作成
--   Lua コード内に `{定数名} = {デフォルト値} -- @require {.py ファイル名} {キー}` と記述
+-   Lua コード内に `{定数名} = {デフォルト値} -- @require lua/{.py ファイル名} {キー}` と記述
     -   .py ファイルを実行し、標準出力を JSON としてパースした値を Lua リテラルに変換したものが、`=` の後に注入される
     -   パースした JSON がオブジェクトや配列ならキーを指定してフィールドを取得可能、キーを `.` 区切りにして深く辿ることも可
     -   デフォルト値は Lua としての構文を成立させてエディタ上でエラーが出ないようにとりあえず書いておくだけで、出力コードには関係ない
@@ -64,10 +66,8 @@
 import os
 from lib.vehicle import Vehicle
 
-DIRNAME = os.path.dirname(__file__)
-DIST_PATH = os.path.join(os.path.dirname(DIRNAME), "dist")
-BASE_VEHICLE = os.path.join(DIRNAME, "{ベースビークルファイル名}")
-OUTPUT_PATH = os.path.join(DIST_PATH, "{出力ビークルファイル名}")
+BASE_VEHICLE = os.path.join(DIRNAME, "{ビークルフォルダ名}/{ベースビークルファイル名}")
+OUTPUT_PATH = os.path.join(DIST_PATH, "dist/{出力ビークルファイル名}")
 
 vehicle = Vehicle(BASE_VEHICLE)
 

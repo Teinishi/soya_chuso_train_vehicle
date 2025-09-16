@@ -5,9 +5,9 @@ jsms_pass = {36, 38, 39}
 jsms_route = {{32, 33}, {35, 34}, {36}, {38, 39}, {40}, {35, 34}}
 equal_tracks = {{32, 33, 40}, {34, 35}, {38, 39}}
 
-not4srv = {} -- @require route_data_lua.py lcd not_for_service
-idx_tbl = {}  -- @require route_data_lua.py lcd index_table
-door_side_tbl = {} -- @require route_data_lua.py lcd door_side_table
+not4srv = {} -- @require lua/route_data_lua.py lcd not_for_service
+idx_tbl = {}  -- @require lua/route_data_lua.py lcd index_table
+door_side_tbl = {} -- @require lua/route_data_lua.py lcd door_side_table
 
 function sta_idx(id)
 	if id < 32 then

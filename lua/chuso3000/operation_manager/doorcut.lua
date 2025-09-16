@@ -1,5 +1,5 @@
 is_outbound = property.getBool('Direction')
-doorcut_table = {} -- @require route_data_lua.py doorcut_table
+doorcut_table = {} -- @require lua/route_data_lua.py doorcut_table
 
 function bit_at(n, i)
 	return n >> i & 1 ~= 0

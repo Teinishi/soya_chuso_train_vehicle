@@ -1,6 +1,6 @@
-link_table = {} -- @require route_data_lua.py link_table
-arc_type_table = {} -- @require route_data_lua.py arc_type_table
-arc_track_table = {} -- @require route_data_lua.py arc_track_table
+link_table = {} -- @require lua/route_data_lua.py link_table
+arc_type_table = {} -- @require lua/route_data_lua.py arc_type_table
+arc_track_table = {} -- @require lua/route_data_lua.py arc_track_table
 
 function find_rte(from,to,inb)
 	if not link_table[from] then return end

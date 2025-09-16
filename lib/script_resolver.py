@@ -8,7 +8,7 @@ from lib.template_parser import parse_template, render_template
 from lib.safe_eval import safe_eval
 
 _MAX_LEN = 8192
-_default_root_dir = os.path.join(os.path.dirname(__file__), "../lua")
+_default_root_dir = "."
 _use_pattern = re.compile(
     r'--\s*@\s*use\s+("(?P<path2>\S+)"|\'(?P<path3>\S+)\'|(?P<path1>\S+))(?P<param>\s+.+)?\s*$')
 _require_pattern = re.compile(

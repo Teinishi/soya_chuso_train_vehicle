@@ -1,4 +1,4 @@
-stop_pos = {} -- @require route_data_lua.py stop_position_table
+stop_pos = {} -- @require lua/route_data_lua.py stop_position_table
 
 GRAVITY=10
 M=math

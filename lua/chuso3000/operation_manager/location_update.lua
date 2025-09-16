@@ -1,8 +1,8 @@
 R1,R2=50,400
-link_table = {} -- @require route_data_lua.py link_table
-stop_type_table = {} -- @require route_data_lua.py stop_type_table
-coordinate_table = {} -- @require route_data_lua.py coordinate_table
-not_for_service = {} -- @require route_data_lua.py not_for_service
+link_table = {} -- @require lua/route_data_lua.py link_table
+stop_type_table = {} -- @require lua/route_data_lua.py stop_type_table
+coordinate_table = {} -- @require lua/route_data_lua.py coordinate_table
+not_for_service = {} -- @require lua/route_data_lua.py not_for_service
 
 local function b2i(f)
 	return f and 1 or 0

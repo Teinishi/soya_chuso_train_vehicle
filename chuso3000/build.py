@@ -1,14 +1,11 @@
-import os
 from lib.vehicle import Vehicle
 from lib.script_resolver import ScriptResolver
 
-DIRNAME = os.path.dirname(__file__)
-DIST_PATH = os.path.join(os.path.dirname(DIRNAME), "dist")
-BASE_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_TM2_JSMS_base.xml")
-MC_DIFF_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_Mc_diff.xml")
-TC_DIFF_VEHICLE = os.path.join(DIRNAME, "CHUSO3000_Tc_diff.xml")
-MC_OUTPUT = os.path.join(DIST_PATH, "CHUSO3000_TM2_JSMS_Mc.xml")
-TC_OUTPUT = os.path.join(DIST_PATH, "CHUSO3000_TM2_JSMS_Tc.xml")
+BASE_VEHICLE = "chuso3000/CHUSO3000_TM2_JSMS_base.xml"
+MC_DIFF_VEHICLE = "chuso3000/CHUSO3000_Mc_diff.xml"
+TC_DIFF_VEHICLE = "chuso3000/CHUSO3000_Tc_diff.xml"
+MC_OUTPUT = "dist/CHUSO3000_TM2_JSMS_Mc.xml"
+TC_OUTPUT = "dist/CHUSO3000_TM2_JSMS_Tc.xml"
 
 # ビークルを読み込み
 vehicle_mc: Vehicle = Vehicle.from_file(BASE_VEHICLE)
