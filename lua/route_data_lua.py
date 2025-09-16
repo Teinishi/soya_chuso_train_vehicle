@@ -1,7 +1,7 @@
 import json
-import os
 
 ROUTE_DATA_PATH = "route_data.json"
+ROUTE_DATA_JSMS_PATH = "route_data_jsms.json"
 
 DOOR_OPEN = 1
 DOOR_OPPOSITE = 3
@@ -36,7 +36,7 @@ def format_stop_pos(stop_pos: dict[str, list[float]] | list[float] | None) -> li
     return tbl
 
 
-def generate_lua_tables(route_data):
+def generate_lua_tables(types: list[dict], stations: list[dict]):
     link_table = {}
     stop_type_table = {}
     coordinate_table = {}
@@ -48,12 +48,12 @@ def generate_lua_tables(route_data):
     doorcut_table = {}
     stop_position_table = {}
 
-    for train_type in route_data.get("types", []):
+    for train_type in types:
         type_id = train_type["id"]
 
         arc_type_table[type_id] = train_type.get("arc", None)
 
-    for station_idx, station in enumerate(route_data.get("stations", [])):
+    for station_idx, station in enumerate(stations):
         stop_types = station.get("stopTypes", [])
 
         for track in station.get("tracks", []):
@@ -114,12 +114,26 @@ def generate_lua_tables(route_data):
     }
 
 
-def main():
+def main(jsms: bool, target: str):
     with open(ROUTE_DATA_PATH, encoding="utf-8") as f:
         route_data = json.load(f)
-    data = generate_lua_tables(route_data)
-    print(json.dumps(data))
+        types = route_data.get("types", [])
+        stations = route_data.get("stations", [])
+
+    if jsms:
+        with open(ROUTE_DATA_JSMS_PATH, encoding="utf-8") as f:
+            route_data = json.load(f)
+            types += route_data.get("types", [])
+            stations += route_data.get("stations", [])
+
+    data = generate_lua_tables(types, stations)
+    print(json.dumps(data[target]))
 
 
 if __name__ == "__main__":
-    main()
+    params = json.loads(input())
+    is_jsms = params.get("build_params", {}).get("is_jsms", False)
+    require_params: list[str] = params["require_param_text"].split(" ")
+    is_lcd = "lcd" in require_params
+    target = require_params[-1]
+    main(is_jsms and is_lcd, target)

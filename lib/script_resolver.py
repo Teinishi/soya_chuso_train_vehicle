@@ -12,7 +12,7 @@ _default_root_dir = os.path.join(os.path.dirname(__file__), "../lua")
 _use_pattern = re.compile(
     r'--\s*@\s*use\s+("(?P<path2>\S+)"|\'(?P<path3>\S+)\'|(?P<path1>\S+))(?P<param>\s+.+)?\s*$')
 _require_pattern = re.compile(
-    r'--\s*@\s*require\s+("(?P<path2>\S+)"|\'(?P<path3>\S+)\'|(?P<path1>\S+))(\s+(?P<key>[^\.\s]+(\s*\.\s*[^\.\s]+)*))?\s*$')
+    r'--\s*@\s*require\s+("(?P<path2>\S+)"|\'(?P<path3>\S+)\'|(?P<path1>\S+))(?P<param>\s+.+)?\s*$')
 _require_line_pattern = re.compile(r'(?P<prefix>=\s*).*$')
 
 
@@ -36,7 +36,7 @@ def _run_python(path: str, input: str | None = None) -> str:
 class ScriptResolver:
     _root_dir: str
     _file_cache: dict[str, str]
-    _require_cache: dict[str, any]
+    _require_cache: dict[tuple[str, str], any]
 
     def __init__(self, root_dir: str = _default_root_dir):
         self._root_dir = root_dir
@@ -61,27 +61,18 @@ class ScriptResolver:
             self._file_cache[path] = text
             return text
 
-    def _require(self, path: str, key: str):
+    def _require(self, path: str, params: dict):
         path = self._join_path_safe(path)
-        if path in self._require_cache:
-            o = self._require_cache[path]
+        params_json = json.dumps(params)
+        if (path, params_json) in self._require_cache:
+            o = self._require_cache[(path, params_json)]
         else:
-            o = json.loads(_run_python(path))
-            self._require_cache[path] = o
-
-        for k in key.split("."):
-            k = k.strip()
-            if isinstance(o, dict):
-                o = o.get(k)
-            elif isinstance(o, list) and k.isdecimal():
-                o = o[int(k)]
-            else:
-                raise TypeError(
-                    f'Cannot get property "{k}" of value {repr(k)}')
+            o = json.loads(_run_python(path, input=params_json))
+            self._require_cache[(path, params_json)] = o
 
         return o
 
-    def _resolve_require(self, script: str) -> str:
+    def _resolve_require(self, script: str, params: dict) -> str:
         # @require を探す
         lines = script.split("\n")
         for i, line in enumerate(lines):
@@ -90,8 +81,17 @@ class ScriptResolver:
                 continue
             path = m1.group("path1") or \
                 m1.group("path2") or m1.group("path3")
-            key = m1.group("key")
-            value = self._require(path, key)
+
+            param = m1.group("param")
+            if param is not None:
+                param = param.strip()
+                params = {**params, "require_param_text": param.strip()}
+                try:
+                    params["require_params"] = json.loads(param)
+                except json.decoder.JSONDecodeError:
+                    pass
+
+            value = self._require(path, params)
             lines[i] = _require_line_pattern.sub(
                 lambda m2: m2.group("prefix") + to_lua_literal(value),
                 line, 1
@@ -107,20 +107,20 @@ class ScriptResolver:
             raise Exception(f'Unexpected error in file "{file}":\n{e}')
         return script
 
-    def _use_script(self, path: str, build_params: dict | None = None, inline_param: str | None = None) -> str:
+    def _use_script(self, path: str, build_params: dict | None = None, use_param: str | None = None) -> str:
         params = {}
         if build_params is not None:
             params["build_params"] = build_params
-        if inline_param is not None:
-            params["inline_param_text"] = inline_param
+        if use_param is not None:
+            params["use_param_text"] = use_param
             try:
-                params["inline_params"] = json.loads(inline_param)
+                params["use_params"] = json.loads(use_param)
             except json.decoder.JSONDecodeError:
                 pass
 
         ext = os.path.splitext(path)[1]
         if ext == ".lua":
-            return self._resolve_require(self._render_template(self._open_file(path), params, path))
+            return self._resolve_require(self._render_template(self._open_file(path), params, path), params)
         elif ext == ".py":
             return _run_python(path, input=json.dumps(params))
         else:

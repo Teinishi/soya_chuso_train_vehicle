@@ -1,4 +1,4 @@
--- @if inline_param_text == 'left'
+-- @if use_param_text == 'left'
 CH = 12
 -- @else
 CH = 13

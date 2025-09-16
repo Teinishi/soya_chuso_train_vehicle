@@ -1,4 +1,4 @@
--- @if inline_param_text == 'left'
+-- @if use_param_text == 'left'
 flip = property.getBool('Direction')
 -- @else
 flip = not property.getBool('Direction')

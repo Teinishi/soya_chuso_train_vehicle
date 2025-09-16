@@ -66,6 +66,7 @@
     "stations": [
         {
             "name": "湖？",
+            "lcdIndex": 1,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {
@@ -79,6 +80,7 @@
         },
         {
             "name": "掘戸町",
+            "lcdIndex": 2,
             "stopTypes": [5, 6, 7],
             "tracks": [
                 {
@@ -94,6 +96,7 @@
         },
         {
             "name": "北港",
+            "lcdIndex": 3,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {
@@ -146,6 +149,7 @@
         },
         {
             "name": "赤土",
+            "lcdIndex": 4,
             "stopTypes": [5],
             "tracks": [
                 {
@@ -175,6 +179,7 @@
         },
         {
             "name": "高見が丘",
+            "lcdIndex": 5,
             "stopTypes": [5, 6, 7],
             "tracks": [
                 {
@@ -207,6 +212,7 @@
         },
         {
             "name": "尾根留",
+            "lcdIndex": 6,
             "stopTypes": [5, 6],
             "tracks": [
                 {
@@ -235,6 +241,7 @@
         },
         {
             "name": "大熊",
+            "lcdIndex": 7,
             "stopTypes": [5],
             "tracks": [
                 {
@@ -264,6 +271,7 @@
         },
         {
             "name": "鏡が池",
+            "lcdIndex": 8,
             "stopTypes": [5, 6, 9],
             "tracks": [
                 {
@@ -289,6 +297,7 @@
         },
         {
             "name": "潮凪浜",
+            "lcdIndex": 9,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {
@@ -327,6 +336,7 @@
         },
         {
             "name": "南江街道",
+            "lcdIndex": 10,
             "stopTypes": [5],
             "tracks": [
                 {
@@ -340,6 +350,7 @@
         },
         {
             "name": "南江町",
+            "lcdIndex": 11,
             "stopTypes": [5, 6, 7],
             "tracks": [
                 {
@@ -354,6 +365,7 @@
         },
         {
             "name": "入守山",
+            "lcdIndex": 12,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {

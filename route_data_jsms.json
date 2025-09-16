@@ -1,0 +1,125 @@
+{
+    "types": [
+        {
+            "id": 10,
+            "arc": {"min": 10, "max": 19},
+            "fullName": "J各停",
+            "shortName": "J各",
+            "color": "gray",
+            "selectPriority": 1,
+            "buttonProps": {
+                "output": [
+                    { "block": "main", "channel": 3, "value": 22563 }
+                ],
+                "linkToName": "案内設定"
+            }
+        },
+        {
+            "id": 11,
+            "arc": {"min": 50, "max": 59},
+            "fullName": "J急行",
+            "shortName": "J急",
+            "color": "red",
+            "selectPriority": 1,
+            "buttonProps": {
+                "output": [
+                    { "block": "main", "channel": 3, "value": 30952 }
+                ],
+                "linkToName": "案内設定"
+            }
+        }
+    ],
+    "stations": [
+        {
+            "name": "JSMS展示場0",
+            "lcdIndex": 1,
+            "stopTypes": [5, 6, 7, 8, 9],
+            "tracks": [
+                {
+                    "id": 32,
+                    "name": "展示場0(1)",
+                    "displayName": "展示場1 起",
+                    "door": { "inbound": "left" },
+                    "selectPriority": 1
+                },
+                {
+                    "id": 33,
+                    "name": "展示場0(2)",
+                    "displayName": "展示場2 起",
+                    "door": { "inbound": "right" },
+                    "selectPriority": 1
+                }
+            ]
+        },
+        {
+            "name": "JSMS潮凪浜0",
+            "lcdIndex": 2,
+            "stopTypes": [5, 6, 7, 8, 9],
+            "tracks": [
+                {
+                    "id": 34,
+                    "name": "潮凪浜0(1)",
+                    "displayName": "潮凪浜1 停",
+                    "door": { "inbound": "right" },
+                    "selectPriority": 1
+                },
+                {
+                    "id": 35,
+                    "name": "潮凪浜0(2)",
+                    "displayName": "潮凪浜2 停",
+                    "door": { "inbound": "left" },
+                    "selectPriority": 1
+                }
+            ]
+        },
+        {
+            "name": "JSMS展示場1",
+            "lcdIndex": 3,
+            "stopTypes": [5],
+            "tracks": [
+                {
+                    "id": 36,
+                    "name": "展示場1(1)",
+                    "displayName": "展示場1 通",
+                    "door": { "inbound": "left" },
+                    "selectPriority": 1
+                }
+            ]
+        },
+        {
+            "name": "JSMS潮凪浜1",
+            "lcdIndex": 4,
+            "stopTypes": [5],
+            "tracks": [
+                {
+                    "id": 38,
+                    "name": "潮凪浜1(1)",
+                    "displayName": "潮凪浜1 通",
+                    "door": { "inbound": "right" },
+                    "selectPriority": 1
+                },
+                {
+                    "id": 39,
+                    "name": "潮凪浜1(2)",
+                    "displayName": "潮凪浜2 通",
+                    "door": { "inbound": "left" },
+                    "selectPriority": 1
+                }
+            ]
+        },
+        {
+            "name": "JSMS展示場2",
+            "lcdIndex": 5,
+            "stopTypes": [5, 6, 7, 8, 9],
+            "tracks": [
+                {
+                    "id": 40,
+                    "name": "展示場2(1)",
+                    "displayName": "展示場1 環",
+                    "door": { "inbound": "left" },
+                    "selectPriority": 1
+                }
+            ]
+        }
+    ]
+}
