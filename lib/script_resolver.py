@@ -99,33 +99,34 @@ class ScriptResolver:
 
         return "\n".join(lines)
 
-    def _render_template(self, script: str, param: str | None, file: str) -> str:
-        context = {}
-        if param is not None:
-            context = {"param": param}
+    def _render_template(self, script: str, params: dict, file: str) -> str:
+        nodes = parse_template([l + "\n" for l in script.split("\n")], file)
+        try:
+            script = render_template(nodes, params, safe_eval)
+        except Exception as e:
+            raise Exception(f'Unexpected error in file "{file}":\n{e}')
+        return script
+
+    def _use_script(self, path: str, build_params: dict | None = None, inline_param: str | None = None) -> str:
+        params = {}
+        if build_params is not None:
+            params["build_params"] = build_params
+        if inline_param is not None:
+            params["inline_param_text"] = inline_param
             try:
-                context = {**context, **json.loads(param)}
+                params["inline_params"] = json.loads(inline_param)
             except json.decoder.JSONDecodeError:
                 pass
 
-        nodes = parse_template([l + "\n" for l in script.split("\n")], file)
-        try:
-            script = render_template(nodes, context, safe_eval)
-        except ValueError as e:
-            raise ValueError(f'Unexpected error in file "{file}":\n{e}')
-        return script
-
-    def _use_script(self, path: str, param: str | None) -> str:
         ext = os.path.splitext(path)[1]
         if ext == ".lua":
-            return self._resolve_require(self._render_template(self._open_file(path), param, path))
+            return self._resolve_require(self._render_template(self._open_file(path), params, path))
         elif ext == ".py":
-            return _run_python(path, input=param)
+            return _run_python(path, input=json.dumps(params))
         else:
             raise ValueError(f'Unknown file type "{ext}" of file "{path}"')
 
-    def resolve_script(self, text: str, leave_params: bool = False):
-        # todo: root_dir の使用箇所チェック
+    def resolve_script(self, text: str, build_params: dict | None = None, leave_params: bool = False):
         use_path_param: tuple[str, str | None] | None = None
         for line in text.split("\n"):
             # @use を探す
@@ -140,7 +141,8 @@ class ScriptResolver:
                 break
 
         if use_path_param is not None:
-            script = self._use_script(use_path_param[0], use_path_param[1])
+            script = self._use_script(
+                use_path_param[0], build_params, use_path_param[1])
 
             # 文字数チェック
             if len(script) > _MAX_LEN:
