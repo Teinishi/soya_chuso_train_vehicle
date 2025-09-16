@@ -15,6 +15,10 @@ Tuple3i = tuple[int, int, int]
 Box = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
 
 
+def _remove_non_ascii(text: str) -> str:
+    return "".join(c for c in text if c.isascii())
+
+
 def _normalize_box(box: Box) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
     a = box[0]
     if isinstance(a, tuple):
@@ -298,9 +302,12 @@ class Vehicle:
 
         for m in itertools.chain.from_iterable(self._microprocessor_name_map.values()):
             for o in m._element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
-                text = self._escape_multiline_attrs.restore_value(
-                    o.get("script"))
-                script = resolver.resolve_script(text, leave_params=True)
-                if script is not None:
-                    identifier = self._escape_multiline_attrs.add(script)
+                script = o.get("script")
+                script = self._escape_multiline_attrs.restore_value(script)
+                resolved = resolver.resolve_script(script, leave_params=True)
+                if resolved is not None:
+                    identifier = self._escape_multiline_attrs.add(
+                        _remove_non_ascii(resolved))
                     o.set("script", identifier)
+                else:
+                    o.set("script", _remove_non_ascii(script))
