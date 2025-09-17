@@ -50,14 +50,19 @@ def _dict_to_lua(data: dict) -> str:
     return lua1
 
 
-def to_lua_literal(data: dict | list | int | float | str | None) -> str:
-    if data is None:
+def to_lua_literal(value: dict | list | tuple | int | float | str | None) -> str:
+    if value is None:
         return "nil"
-    elif isinstance(data, int) or isinstance(data, float):
-        return str(data)
-    elif isinstance(data, str):
-        return f"'{data}'"
-    elif isinstance(data, list):
-        return _list_to_lua(data)
-    elif isinstance(data, dict):
-        return _dict_to_lua(data)
+    elif isinstance(value, int) or isinstance(value, float):
+        return str(value)
+    elif isinstance(value, str):
+        return f"'{value}'"
+    elif isinstance(value, list):
+        return _list_to_lua(value)
+    elif isinstance(value, tuple):
+        return _list_to_lua(list(value))
+    elif isinstance(value, dict):
+        return _dict_to_lua(value)
+    else:
+        raise TypeError(
+            f"Unable to generate lua literal for {type(value).__name__} value {repr(value)}")

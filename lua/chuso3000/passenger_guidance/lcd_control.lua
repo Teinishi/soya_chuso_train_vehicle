@@ -1,13 +1,9 @@
-not4srv={[5]=1,[8]=1,[13]=1}
-idx_tbl={1,2,3,3,3,4,5,5,6,7,8,9,9,10,11,nil,12,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil,1,1,2,2,3,nil,4,4,5}
-door_side_tbl={[32]=208,[33]=112,[34]=112,[35]=208,[36]=208,[38]=112,[39]=208,[40]=208,[3]=125,[4]=208,[6]=221,[7]=221,[9]=221,[10]=221,[11]=221,[12]=221}
-jsms_pass = {36, 38, 39}
-jsms_route = {{32, 33}, {35, 34}, {36}, {38, 39}, {40}, {35, 34}}
-equal_tracks = {{32, 33, 40}, {34, 35}, {38, 39}}
-
 not4srv = {} -- @require lua/route_data_lua.py lcd not_for_service
 idx_tbl = {}  -- @require lua/route_data_lua.py lcd index_table
 door_side_tbl = {} -- @require lua/route_data_lua.py lcd door_side_table
+jsms_pass = {} -- @require lua/route_data_lua.py jsms_pass_list
+jsms_route = {} -- @require lua/route_data_lua.py jsms_route
+equal_tracks = {} -- @require lua/route_data_lua.py jsms_track_groups
 
 function sta_idx(id)
 	if id < 32 then

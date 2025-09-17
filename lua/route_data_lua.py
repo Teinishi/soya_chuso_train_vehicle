@@ -9,6 +9,16 @@ DOOR_OPEN = 1
 DOOR_OPPOSITE = 3
 
 
+def load(path: str):
+    with open(path, encoding="utf-8") as f:
+        route_data = json.load(f)
+    types: list[dict] = route_data.get("types", [])
+    stations: list[dict] = route_data.get("stations", [])
+    tracks: list[dict] = [
+        track for station in stations for track in station.get("tracks", [])]
+    return (types, stations, tracks)
+
+
 def create_link_table(tracks: list[dict]):
     link_table: dict[int, list[int]] = {}
     for track in tracks:
@@ -30,15 +40,16 @@ def create_stop_type_table(stations: list[dict]):
 
 
 def create_coordinate_table(tracks: list[dict]):
-    coordinate_table = {}
+    coordinate_table: dict[int, tuple[float, float]] = {}
     for track in tracks:
         if "coordinate" in track:
-            coordinate_table[track["id"]] = track["coordinate"]
+            coordinate_table[track["id"]] = (
+                track["coordinate"][0], track["coordinate"][1])
     return coordinate_table
 
 
 def create_not_for_service_table(tracks: list[dict]):
-    not_for_service_table = {}
+    not_for_service_table: dict[int, int] = {}
     for track in tracks:
         if track.get("notForService", False):
             not_for_service_table[track["id"]] = 1
@@ -46,9 +57,9 @@ def create_not_for_service_table(tracks: list[dict]):
 
 
 def create_index_table(stations: list[dict]):
-    index_table = {}
+    index_table: dict[int, int] = {}
     for station in stations:
-        station_index = station["stationIndex"]
+        station_index: int = station["stationIndex"]
         for track in station.get("tracks"):
             index_table[track["id"]] = station_index
     return index_table
@@ -62,7 +73,7 @@ def create_door_side_table(tracks: list[dict]):
             return DOOR_OPPOSITE | DOOR_OPEN << 2
         return 0
 
-    door_side_table = {}
+    door_side_table: dict[int, int] = {}
     for track in tracks:
         if "door" in track:
             door_side_table[track["id"]] = \
@@ -72,7 +83,7 @@ def create_door_side_table(tracks: list[dict]):
 
 
 def create_arc_type_table(types: list[dict]):
-    arc_type_table = {}
+    arc_type_table: dict[int, list[int] | dict[str, int]] = {}
     for train_type in types:
         if "arc" in train_type:
             arc_type_table[train_type["id"]] = train_type["arc"]
@@ -80,7 +91,7 @@ def create_arc_type_table(types: list[dict]):
 
 
 def create_arc_track_table(tracks: list[dict]):
-    arc_track_table = {}
+    arc_track_table: dict[int, list[int] | dict[str, int]] = {}
     for track in tracks:
         if "arc" in track:
             arc_track_table[track["id"]] = track["arc"]
@@ -88,20 +99,20 @@ def create_arc_track_table(tracks: list[dict]):
 
 
 def create_doorcut_table(tracks: list[dict]):
-    def _doorcut_data(data):
+    def _doorcut_data(data) -> dict[str, int]:
         return {
             "i": data.get("inbound", None),
             "m": data.get("middle", None),
             "o": data.get("outbound", None)
         }
 
-    doorcut_table = {}
+    doorcut_table: dict[int, tuple[dict[str, int], dict[str, int]]] = {}
     for track in tracks:
         if "doorcut" in track:
-            doorcut_table[track["id"]] = [
+            doorcut_table[track["id"]] = (
                 _doorcut_data(track["doorcut"].get("inbound", {})),
                 _doorcut_data(track["doorcut"].get("outbound", {}))
-            ]
+            )
     return doorcut_table
 
 
@@ -118,27 +129,75 @@ def create_stop_position_table(tracks: list[dict]):
                         int(k) if k != "default" else None])
         return tbl
 
-    stop_position_table = {}
+    stop_position_table: \
+        dict[int, tuple[list[list[float]]], list[list[float]]] = {}
     for track in tracks:
         p = track.get("stopPosition", {})
         p_inbound = p.get("inbound", None)
         p_outbound = p.get("outbound", None)
         if p_inbound is not None or p_outbound is not None:
-            stop_position_table[track["id"]] = [
+            stop_position_table[track["id"]] = (
                 _format_stop_pos(p_inbound),
                 _format_stop_pos(p_outbound)
-            ]
+            )
     return stop_position_table
 
 
-def load(path: str):
-    with open(path, encoding="utf-8") as f:
-        route_data = json.load(f)
-    types: list[dict] = route_data.get("types", [])
-    stations: list[dict] = route_data.get("stations", [])
-    tracks: list[dict] = [
-        track for station in stations for track in station.get("tracks", [])]
-    return (types, stations, tracks)
+def create_jsms_pass_list(stations: list[dict]):
+    jsms_pass_list: set[int] = set()
+    for station in stations:
+        if station.get("jsmsPass", False):
+            for track in station.get("tracks", []):
+                jsms_pass_list.add(track["id"])
+    return list(sorted(jsms_pass_list))
+
+
+def create_jsms_route(stations: list[dict]):
+    track_station_index: dict[int, int] = {}
+    for i, station in enumerate(stations):
+        for track in station.get("tracks", []):
+            track_station_index[track["id"]] = i
+
+    station_order: list[int] = []
+    primary_tracks: set[int] = set()
+    for i, station in enumerate(stations):
+        if "jsmsNext" not in station:
+            continue
+        jsmsNext = station["jsmsNext"]
+        primary_tracks.add(jsmsNext)
+        j = track_station_index[jsmsNext]
+        try:
+            station_order.insert(station_order.index(i) + 1, j)
+        except ValueError:
+            station_order.append(i)
+            station_order.append(j)
+
+    jsms_route: list[list[int]] = []
+    for i in station_order:
+        station = stations[i]
+        track_ids = [track["id"] for track in station.get("tracks", [])]
+        track_ids.sort(key=lambda t: -9999 if t in primary_tracks else t)
+        jsms_route.append(track_ids)
+    return jsms_route
+
+
+def create_track_groups(stations: list[dict]):
+    groups: dict[str, set[int]] = {}
+    for station in stations:
+        group_name = station.get("group")
+        if group_name is None:
+            continue
+        track_ids = {track["id"] for track in station.get("tracks", [])}
+        if group_name not in groups:
+            groups[group_name] = track_ids
+        else:
+            groups[group_name].update(track_ids)
+
+    track_groups: list[list[int]] = []
+    for station_indices in groups.values():
+        if len(station_indices) >= 2:
+            track_groups.append(list(sorted(station_indices)))
+    return track_groups
 
 
 types, stations, tracks = load(ROUTE_DATA_PATH)
@@ -157,7 +216,10 @@ data = {
     "arc_type_table": create_arc_type_table(types),
     "arc_track_table": create_arc_track_table(tracks),
     "doorcut_table": create_doorcut_table(tracks),
-    "stop_position_table": create_stop_position_table(tracks)
+    "stop_position_table": create_stop_position_table(tracks),
+    "jsms_pass_list": create_jsms_pass_list(stations + jsms_stations),
+    "jsms_route": create_jsms_route(stations + jsms_stations),
+    "jsms_track_groups": create_track_groups(stations + jsms_stations)
 }
 
 
