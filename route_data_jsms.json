@@ -32,7 +32,7 @@
     "stations": [
         {
             "name": "JSMS展示場0",
-            "lcdIndex": 1,
+            "stationIndex": 1,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {
@@ -53,7 +53,7 @@
         },
         {
             "name": "JSMS潮凪浜0",
-            "lcdIndex": 2,
+            "stationIndex": 2,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {
@@ -74,7 +74,7 @@
         },
         {
             "name": "JSMS展示場1",
-            "lcdIndex": 3,
+            "stationIndex": 3,
             "stopTypes": [5],
             "tracks": [
                 {
@@ -88,7 +88,7 @@
         },
         {
             "name": "JSMS潮凪浜1",
-            "lcdIndex": 4,
+            "stationIndex": 4,
             "stopTypes": [5],
             "tracks": [
                 {
@@ -109,7 +109,7 @@
         },
         {
             "name": "JSMS展示場2",
-            "lcdIndex": 5,
+            "stationIndex": 5,
             "stopTypes": [5, 6, 7, 8, 9],
             "tracks": [
                 {

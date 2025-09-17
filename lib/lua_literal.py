@@ -5,27 +5,11 @@ def _dict_to_list(data: dict[int, any]):
     return r
 
 
-def _is_number(s: str) -> bool:
-    try:
-        float(s)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def _is_natural_number(s: str) -> bool:
-    if not _is_number(s):
-        return False
-    f = float(s)
-    return f.is_integer() and f >= 1
-
-
 def _lua_table_key(key: int | float | str) -> str:
-    if _is_number(key):
-        return f"[{key}]"
-    else:
+    if type(key) is str:
         return key
+    else:
+        return f"[{key}]"
 
 
 def _list_to_lua(data: list) -> str:
@@ -52,7 +36,7 @@ def _dict_to_lua(data: dict) -> str:
     other_keys = {}
 
     for k, v in data.items():
-        if _is_natural_number(k):
+        if type(k) is int or type(k) is float and k.is_integer():
             natural_number_keys[int(k)] = v
         else:
             other_keys[k] = v

@@ -296,7 +296,7 @@ class Vehicle:
         bodies = self._root.find("./bodies")
         bodies.remove(body2)
 
-    def resolve_lua_script(self, build_params: dict | None = None, resolver: ScriptResolver = None):
+    def resolve_lua_script(self, build_params: dict | None = None, resolver: ScriptResolver | None = None):
         if resolver is None:
             resolver = ScriptResolver()
 
