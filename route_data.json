@@ -32,7 +32,7 @@
             "arc": {"min": 10, "max": 19},
             "fullName": "各　停",
             "shortName": "各停",
-            "color": "blue"
+            "color": "gray"
         },
         {
             "id": 6,
@@ -61,6 +61,33 @@
             "fullName": "秋特急",
             "shortName": "特急",
             "color": "orange"
+        }
+    ],
+    "lcdTypes": [
+        {
+            "lcdId": 1,
+            "typeIds": [1],
+            "color": [21, 21, 21]
+        },
+        {
+            "lcdId": 2,
+            "typeIds": [5],
+            "color": [21, 21, 21]
+        },
+        {
+            "lcdId": 3,
+            "typeIds": [6],
+            "color": [0, 42, 0]
+        },
+        {
+            "lcdId": 4,
+            "typeIds": [7],
+            "color": [255, 0, 0]
+        },
+        {
+            "lcdId": 5,
+            "typeIds": [8, 9],
+            "color": [255, 24, 0]
         }
     ],
     "stations": [

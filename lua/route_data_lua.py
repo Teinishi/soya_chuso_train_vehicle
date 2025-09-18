@@ -13,10 +13,11 @@ def load(path: str):
     with open(path, encoding="utf-8") as f:
         route_data = json.load(f)
     types: list[dict] = route_data.get("types", [])
+    lcd_types: list[dict] = route_data.get("lcdTypes", [])
     stations: list[dict] = route_data.get("stations", [])
     tracks: list[dict] = [
         track for station in stations for track in station.get("tracks", [])]
-    return (types, stations, tracks)
+    return (types, lcd_types, stations, tracks)
 
 
 def create_link_table(tracks: list[dict]):
@@ -200,8 +201,24 @@ def create_track_groups(stations: list[dict]):
     return track_groups
 
 
-types, stations, tracks = load(ROUTE_DATA_PATH)
-_, jsms_stations, jsms_tracks = load(ROUTE_DATA_JSMS_PATH)
+def create_lcd_train_type_table(lcd_types: list[dict]):
+    lcd_train_type_table: dict[int, int] = {}
+    for lcd_type in lcd_types:
+        for type_id in lcd_type.get("typeIds", []):
+            lcd_train_type_table[type_id] = lcd_type["lcdId"]
+    return lcd_train_type_table
+
+
+def create_lcd_train_type_color_table(lcd_types: list[dict]):
+    color_table: dict[int, tuple[int, int, int]] = {}
+    for lcd_type in lcd_types:
+        c = lcd_type["color"]
+        color_table[lcd_type["lcdId"]] = (c[0], c[1], c[2])
+    return color_table
+
+
+types, lcd_types, stations, tracks = load(ROUTE_DATA_PATH)
+_, _, jsms_stations, jsms_tracks = load(ROUTE_DATA_JSMS_PATH)
 
 data = {
     "link_table": create_link_table(tracks),
@@ -219,7 +236,9 @@ data = {
     "stop_position_table": create_stop_position_table(tracks),
     "jsms_pass_list": create_jsms_pass_list(stations + jsms_stations),
     "jsms_route": create_jsms_route(stations + jsms_stations),
-    "jsms_track_groups": create_track_groups(stations + jsms_stations)
+    "jsms_track_groups": create_track_groups(stations + jsms_stations),
+    "lcd_train_type_table": create_lcd_train_type_table(lcd_types),
+    "lcd_train_type_color_table": create_lcd_train_type_color_table(lcd_types)
 }
 
 

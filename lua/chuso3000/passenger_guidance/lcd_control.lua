@@ -4,6 +4,7 @@ door_side_tbl = {} -- @require lua/route_data_lua.py lcd door_side_table
 jsms_pass = {} -- @require lua/route_data_lua.py jsms_pass_list
 jsms_route = {} -- @require lua/route_data_lua.py jsms_route
 equal_tracks = {} -- @require lua/route_data_lua.py jsms_track_groups
+train_type_tbl = {} -- @require lua/route_data_lua.py lcd_train_type_table
 
 function sta_idx(id)
 	if id < 32 then
@@ -38,8 +39,6 @@ function track_equals(a, b, c)
 		end
 	end
 end
-
-train_type_tbl={1,0,0,0,2,3,4,5,5}
 
 ROUTE_MAP_N = 5
 START_STA = 1
