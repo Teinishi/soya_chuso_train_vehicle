@@ -17,12 +17,12 @@ _require_line_pattern = re.compile(r'(?P<prefix>=\s*).*$')
 
 @dataclass
 class UseParams:
-    build_params: dict | None
+    build_params: any
     use_param_text: str | None
     use_params: dict | None
 
     @staticmethod
-    def _from_text(build_params: dict | None, use_param_text: str | None):
+    def _from_text(build_params, use_param_text: str | None):
         use_params = None
         if use_param_text is not None:
             use_param_text = use_param_text.strip()
@@ -42,7 +42,7 @@ class UseParams:
 
 @dataclass
 class RequireParams:
-    build_params: dict | None
+    build_params: any
     use_param_text: str | None
     use_params: dict | None
     require_param_text: str | None
@@ -165,7 +165,7 @@ class ScriptResolver:
             raise Exception(f'Unexpected error in file "{file}":\n{e}')
         return script
 
-    def _use_script(self, path: Path, build_params: dict | None = None, use_param_text: str | None = None) -> str:
+    def _use_script(self, path: Path, build_params=None, use_param_text: str | None = None) -> str:
         params = UseParams._from_text(build_params, use_param_text)
 
         ext = path.suffix
@@ -178,7 +178,7 @@ class ScriptResolver:
         else:
             raise ValueError(f'Unknown file type "{ext}" of file "{path}"')
 
-    def resolve_script(self, text: str, build_params: dict | None = None, leave_params: bool = False):
+    def resolve_script(self, text: str, build_params=None, leave_filename: bool = False):
         use_path_param: tuple[str, str | None] | None = None
         for line in text.split("\n"):
             # @use を探す
@@ -203,12 +203,8 @@ class ScriptResolver:
 
             # 文字数が足りるならコメントを残す
             prefix = ""
-            if leave_params:
-                prefix = f"-- {Path(use_path_param[0]).relative_to(self._root_path)}"
-                if use_path_param[1] is not None:
-                    prefix += " "
-                    prefix += use_path_param[1]
-                prefix += "\n"
+            if leave_filename:
+                prefix = f"-- {Path(use_path_param[0]).relative_to(self._root_path)}\n"
             if len(prefix) + len(script) > _MAX_LEN:
                 return script
             else:

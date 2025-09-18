@@ -296,7 +296,7 @@ class Vehicle:
         bodies = self._root.find("./bodies")
         bodies.remove(body2)
 
-    def resolve_lua_script(self, build_params: dict | None = None, resolver: ScriptResolver | None = None):
+    def resolve_lua_script(self, build_params=None, resolver: ScriptResolver | None = None):
         if resolver is None:
             resolver = ScriptResolver()
 
@@ -305,7 +305,7 @@ class Vehicle:
                 script = o.get("script")
                 script = self._escape_multiline_attrs.restore_value(script)
                 resolved = resolver.resolve_script(
-                    script, build_params=build_params, leave_params=True)
+                    script, build_params=build_params, leave_filename=True)
                 if resolved is not None:
                     identifier = self._escape_multiline_attrs.add(
                         _remove_non_ascii(resolved))

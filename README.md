@@ -46,7 +46,7 @@ vehicle.save(OUTPUT_PATH)
 
 ## Lua の生成・埋め込みについて
 
-ビークルファイルと Lua ファイルを分離し、ビルド時に結合することができます。build.py で、`vehicle.resolve_lua_script()` とするとベースビークルに自動的に Lua を埋め込みます。複数のビークルを出力するときは次のように共通の `ScriptResolver` を使うと一部処理のキャッシュが効きます。
+ビークルファイルと Lua ファイルを分離し、ビルド時に結合することができます。build.py で、`vehicle.resolve_lua_script()` とするとベースビークルに自動的に Lua を埋め込みます。複数のビークルを出力するときは次のように共通の `ScriptResolver` を使うとキャッシュが効きます。
 
 ```python
 from lib.script_resolver import ScriptResolver
@@ -58,12 +58,28 @@ vehicle1.resolve_lua_script(resolver=resolver)
 vehicle2.resolve_lua_script(resolver=resolver)
 ```
 
+Lua 生成・埋め込みに関わる指示マーカーがあります。
+
+| マーカー                                                            | 記述場所                        |
+| ------------------------------------------------------------------- | ------------------------------- |
+| [`@use` マーカー](#use-マーカー)                                    | ベースビークルの Lua スクリプト |
+| [`@if`、`@elif`、`@else`、`@end` マーカー](#ifelifelseend-マーカー) | .lua ファイル                   |
+| [`@require` マーカー](#require-マーカー)                            | .lua ファイル                   |
+
+`@if`、`@elif` マーカーや、Lua 生成用 Python スクリプトに渡すことができるパラメーターがあります。
+
+| パラメーター名 | 型   | 記述場所                                                                   |
+| -------------- | ---- | -------------------------------------------------------------------------- |
+| build_params   | any  | ビルドスクリプトの `vehicle.resolve_lua_script()` の引数                   |
+| use_param_text | str  | ベースビークルの Lua スクリプトの `--- @use {ファイルパス} {パラメーター}` |
+| use_params     | dict | 同上、JSON として解釈を試みたもの                                          |
+
 #### ビルドパラメーター
 
 ビルドスクリプトから Lua に関するパラメーターを渡すことができます。次のようにして dict を渡すと **build_params** として、Lua ファイル内の `@if` や、Lua スクリプトを生成するための Python スクリプト、`@require` で呼び出された Python スクリプトから参照することができます。
 
 ```python
-vehicle.resolve_lua_script({"I am": "Build Parameter"})
+vehicle.resolve_lua_script({"hoge": "hogehoge"})
 ```
 
 ### ベースビークルの書式
@@ -87,24 +103,24 @@ vehicle.resolve_lua_script({"I am": "Build Parameter"})
 また、複数の Lua ブロックでわずかに異なるような Lua スクリプトを使う場合などのために、パラメーターを渡すことができます。**use_param_text** でそのままの文字列が、**use_params** で JSON としてパースした値を参照できます。詳細は [Lua ファイル内での書式](#lua-ファイル内での書式) を参照してください。
 
 ```lua
---- @use lua/hoge.lua foo
---- @use lua/hoge.lua {"I am": "Use Parameter"}
+--- @use lua/hoge.lua fuga
+--- @use lua/hoge.lua {"fuga": "fugafuga"}
 ```
 
 ##### .py ファイルを `@use` で呼び出す
 
-.lua ファイルだけでなく、.py ファイルを指定することもできます。その場合、その Python スクリプトを実行し、標準出力を Lua スクリプトとして埋め込みます。パラメーターは、ビルドパラメーターを合わせて JSON 化して標準入力で渡されます。
+.lua ファイルだけでなく、.py ファイルを指定することもできます。その場合、その Python スクリプトをモジュールとして読み込み、use 関数を実行します。その戻り値を Lua スクリプトとしてビークルに埋め込みます。
 
 ```lua
---- @use lua/fuga.py {"I am": "Use Parameter"}
+--- @use lua/hoge.lua {"fuga": "fugafuga"}
 ```
 
-```json
-{
-    "build_params": { "I am": "Build Parameter" },
-    "use_param_text": "{\"I am\": \"Use Parameter\"}",
-    "use_params": { "I am": "Use Parameter" }
-}
+```python
+def use(params) -> str:
+    print(params.build_params) # -> {"hoge": "hogehoge"}
+    print(params.use_param_text) # -> '{"fuga": "fugafuga"}'
+    print(params.use_params) # -> {"fuga": "fugafuga"}
+    return "{Lua スクリプト}"
 ```
 
 ### Lua ファイル内の書式
@@ -113,12 +129,12 @@ vehicle.resolve_lua_script({"I am": "Build Parameter"})
 
 #### `@if`、`@elif`、`@else`、`@end` マーカー
 
-複数の Lua ブロックでわずかに異なるような Lua スクリプトを使う場合などのために、条件分岐でスクリプトの内容を一部切り替えることができます。Python に近い構文で、次のように記述してください。Python と異なる点として、辞書のキーが文字列なら、`.` で繋ぐことで取得できます。
+複数の Lua ブロックでわずかに異なるような Lua スクリプトを使う場合などに、上記のように Python スクリプトを使うこともできますが、簡単な条件分岐に限っては .lua ファイルにマーカーを記述することで内容を一部切り替えることができます。Python に近い構文で、次のように記述してください。Python と異なる点として、辞書のキーが文字列なら、`.` で繋ぐことで取得できます。
 
 ```lua
--- @if use_params.hoge == "fuga"
+-- @if use_params.fuga == "fugafuga"
 value = 123
--- @elif use_params.hoge == "piyo"
+-- @elif use_params.fuga == "piyopiyo"
 value = 456
 -- @else
 value = 789
@@ -129,39 +145,29 @@ value = 789
 
 -   **build_params**: ビルドスクリプトからのパラメーター
 -   **use_param_text**: `@use` からのパラメーターの文字列
--   **use_params**: `@use` からのパラメーターを JSON としてパースした値
+-   **use_params**: `@use` からのパラメーターを JSON としてパースを試みた値
 
 #### `@require` マーカー
 
-複数の Lua スクリプトの間で共通の定数を使う場合などに、Python スクリプトから定数を生成して Lua スクリプトに埋め込むことができます。次のように記述してください。
+複数の Lua スクリプトの間で共通の定数を使う場合などに、別の Python スクリプトから定数を生成して Lua スクリプトに埋め込むことができます。その場合、その Python スクリプトをモジュールとして読み込み、require 関数を実行します。その戻り値を Lua スクリプトとして埋め込みます。次のように記述してください。
 
 ```lua
--- @require {.py ファイルへのパス} {任意のパラメーター}
+piyo = {} -- @require lua/constants.py {"piyo": "piyopiyo"}
 ```
-
-例えば、次のように記述すると lua/constants.py に対し、下の JSON を標準入力に渡して実行します。
-
-```lua
--- @require lua/constants.py { "I am": "Require Parameter" }
-```
-
-```json
-{
-    "build_params": { "I am": "Build Parameter" },
-    "use_param_text": "{\"I am\": \"Use Parameter\"}",
-    "use_params": { "I am": "Use Parameter" },
-    "require_param_text": "{\"I am\": \"Require Parameter\"}",
-    "require_params": { "I am": "Require Parameter" }
-}
-```
-
-標準出力に Lua リテラルの文字列を出力してください。Python の dict や list でも、次のようにして Lua リテラルに変換することができます。(TODO: 現状まだ import できないので直す)
 
 ```python
 from lib.lua_literal import to_lua_literal
 
-to_lua_literal([8, 6, 7, 3, 2]) # -> '{8,6,7,3,2}'
+def require(params) -> str:
+    print(params.build_params) # -> {"hoge": "hogehoge"}
+    print(params.use_param_text) # -> '{"fuga": "fugafuga"}'
+    print(params.use_params) # -> {"fuga": "fugafuga"}
+    print(params.require_param_text) # -> '{"piyo": "piyopiyo"}'
+    print(params.require_params) # -> {"piyo": "piyopiyo"}
+    return to_lua_literal([8, 6, 7, 3, 2]) # -> '{8,6,7,3,2}'
 ```
+
+Python で生成した Lua スクリプトは、当該行の `=` より後ろを置換します。デフォルト値は .lua ファイルをエディタで開いたときに構文エラーで警告が出ないようにするために書くもので、出力には関係ありません。戻り値として Lua リテラルの文字列を出力してください。Python の dict や list でも、`from lib.lua_literal import to_lua_literal` で `to_lua_literal` 関数に渡すと変換できます。
 
 ## ビークル開発ガイド
 
@@ -178,25 +184,25 @@ to_lua_literal([8, 6, 7, 3, 2]) # -> '{8,6,7,3,2}'
 -   必要なら、extract_lua.py を用いてビークルデータから Lua スクリプトをすべて抽出し確認
 -   Lua ファイルを lua/{ビークルフォルダ名}/{Lua ファイル名} に作成
 -   Stormworks 上で Lua コードの代わりに `-- @use lua/{ビークルフォルダ名}/{Luaファイル名}` と記述
-    -   @use がある Lua は Lua ブロック丸ごと置換するため、ベースビークルの Lua も機能するようにしておきたい場合は残してもよい
+    -   `@use` がある Lua は Lua ブロック丸ごと置換するため、ベースビークルの Lua も機能するようにしておきたい場合は残してもよい
 
 ### Lua の定数等を別ファイルに分離
 
 -   lua/ 以下に、実行すると JSON 文字列を出力する .py ファイルを作成
 -   Lua コード内に `{定数名} = {デフォルト値} -- @require lua/{.py ファイル名} {キー}` と記述
-    -   .py ファイルを実行し、標準出力を JSON としてパースした値を Lua リテラルに変換したものが、`=` の後に注入される
-    -   パースした JSON がオブジェクトや配列ならキーを指定してフィールドを取得可能、キーを `.` 区切りにして深く辿ることも可
-    -   デフォルト値は Lua としての構文を成立させてエディタ上でエラーが出ないようにとりあえず書いておくだけで、出力コードには関係ない
+    -   .py ファイルを実行し、標準出力を JSON としてパースした値を Lua リテラルに変換したもので、`=` の後を置換します
+    -   パースした JSON がオブジェクトや配列ならキーを指定してフィールドを取得可能で、キーを `.` 区切りにして深く辿ることもできます
+    -   デフォルト値は Lua としての構文を成立させてエディタ上でエラーが出ないようにとりあえず書いておくだけで、出力コードには関係ありません
 
 ### 新規形式を追加
 
 -   新規フォルダを追加 (chuso3000 と同階層)
 -   ベースビークルを準備
-    -   M 車と T 車で異なる床下機器など、差分パーツは別ビークルとして切り出しておき、ベースビークルにはそのための空間を空けてください。
-        -   ただし、パンタグラフなどロジック配線がある差分パーツはベースビークルに残してください。
+    -   M 車と T 車で異なる床下機器など、差分パーツは別ビークルとして切り出しておき、ベースビークルにはそのための空間を空けてください
+        -   ただし、パンタグラフなどロジック配線がある差分パーツはベースビークルに残してください
 -   ベースビークル XML と、Component Mod のフォルダ (ビークルファイルと同名) を配置
 -   build.bat に `python -m {ビークルフォルダ名}.build` を追記
 -   上記 [ビルドスクリプトについて](#ビルドスクリプトについて) を参考に、build.py を作成
-    -   別ビークルに切り出した差分パーツは `vehicle.include_vehicle(Vehicle.from_file({差分ビークルファイルパス}))` で統合できます。
-        -   現状パーツのボクセル重複検知はできないので、ベースビークルと差分ビークルでボクセルが重複しないよう注意が必要です。
-    -   パンタグラフなどロジック配線がある差分パーツは、必要に応じてベースビークルから `vehicle.remove_components(box=(({X1}, {Y1}, {Z1}), ({X2}, {Y2}, {Z2})))` で削除できます。
+    -   別ビークルに切り出した差分パーツは `vehicle.include_vehicle(Vehicle.from_file({差分ビークルファイルパス}))` で統合できます
+        -   現状パーツのボクセル重複検知はできないので、ベースビークルと差分ビークルでボクセルが重複しないよう注意が必要です
+    -   パンタグラフなどロジック配線がある差分パーツは、必要に応じてベースビークルから `vehicle.remove_components(box=(({X1}, {Y1}, {Z1}), ({X2}, {Y2}, {Z2})))` で削除できます
