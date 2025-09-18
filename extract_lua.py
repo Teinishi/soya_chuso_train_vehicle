@@ -5,9 +5,11 @@ from xml.etree import ElementTree as ET
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
 
 invalid_path_chars = re.compile('[<>:"/\\|?*]')
+use_pattern = re.compile(
+    r'--\s*@\s*use\s+("(?P<path2>\S+)"|\'(?P<path3>\S+)\'|(?P<path1>\S+))(?P<param>\s+.+)?\s*$')
 
 
-def main(input_path, output_path):
+def main(input_path: str, output_path: str, skip_use: bool):
     with open(input_path, encoding="utf-8") as f:
         xml_text = f.read()
 
@@ -19,7 +21,12 @@ def main(input_path, output_path):
     for mpdef in root.findall(".//microprocessor_definition"):
         scripts = []
         for o in mpdef.findall('group/components/c[@type="56"]/object'):
-            scripts.append(escape_multiline_attrs.restore_value(o.get("script")))
+            scripts.append(
+                escape_multiline_attrs.restore_value(o.get("script")))
+
+        if skip_use:
+            scripts = [
+                script for script in scripts if use_pattern.search(script) is None]
 
         if len(scripts) == 0:
             continue
@@ -46,11 +53,11 @@ def main(input_path, output_path):
                     f.write(script)
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("vehicle", type=str)
     parser.add_argument("output", type=str)
+    parser.add_argument("--skip-use", action="store_true")
     args = parser.parse_args()
 
-    main(args.vehicle, args.output)
+    main(args.vehicle, args.output, args.skip_use)
