@@ -5,6 +5,7 @@ import typing
 import copy
 import os
 import glob
+from typing import Literal
 from xml.etree import ElementTree as ET
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
@@ -13,6 +14,16 @@ from lib.script_resolver import ScriptResolver
 
 Tuple3i = tuple[int, int, int]
 Box = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
+
+LOGIC_TYPES = {
+    "bool": 0,
+    "number": 1,
+    "electric": 4,
+    "composite": 5,
+    "video": 6,
+    "audio": 7,
+    "rope": 8
+}
 
 
 def _remove_non_ascii(text: str) -> str:
@@ -162,6 +173,27 @@ class Vehicle:
             self._microprocessor_name_map[microprocessor_name]\
                 .remove(component)
 
+    def add_logic_link(
+        self,
+        logic_type: Literal["bool", "number", "electric", "composite", "video", "audio", "rope"],
+        position_0: Vector3i | Tuple3i,
+        position_1: Vector3i | Tuple3i
+    ):
+        element = ET.Element(
+            "logic_node_link",
+            {"type": str(LOGIC_TYPES[logic_type])}
+        )
+        element.append(ET.Element(
+            "voxel_pos_0",
+            Vector3i(position_0).to_xml_dict()
+        ))
+        element.append(ET.Element(
+            "voxel_pos_1",
+            Vector3i(position_1).to_xml_dict()
+        ))
+        self._root.find("./logic_node_links").append(element)
+        self._add_logic_link(LogicNodeLink(element))
+
     def _add_logic_link(self, link: LogicNodeLink):
         self._logic_links.add(link)
         self._position_logic_map[link.get_position_0()].add(link)
@@ -218,11 +250,9 @@ class Vehicle:
         custom_name: str | None = None,
         microprocessor_name: str | None = None
     ) -> list[VehicleComponent]:
-        if isinstance(position, tuple):
-            position = Vector3i(*position)
-
         result: list[VehicleComponent] | None = None
         if position is not None:
+            position = Vector3i(position)
             if position not in self._position_component_map:
                 return []
             result = [self._position_component_map[position]]

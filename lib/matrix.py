@@ -8,8 +8,10 @@ class Vector3i:
     y: int
     z: int
 
-    def __init__(self, x: int | tuple[int, int, int], y: int | None = None, z: int | None = None):
-        if isinstance(x, tuple):
+    def __init__(self, x: int | typing.Self | tuple[int, int, int], y: int | None = None, z: int | None = None):
+        if isinstance(x, Vector3i):
+            x, y, z = x.x, x.y, x.z
+        elif isinstance(x, tuple):
             x, y, z = x
         object.__setattr__(self, "x", x)
         object.__setattr__(self, "y", y)
@@ -20,6 +22,13 @@ class Vector3i:
 
     def __repr__(self) -> str:
         return f"[{self.x}, {self.y}, {self.z}]"
+
+    def to_xml_dict(self) -> dict[str, int]:
+        return {
+            "x": str(self.x),
+            "y": str(self.y),
+            "z": str(self.z)
+        }
 
 
 @dataclass(frozen=True)
