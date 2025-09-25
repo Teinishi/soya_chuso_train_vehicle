@@ -19,10 +19,12 @@ function gI(c)
 	return M.floor(gN(c))
 end
 function gNf(c, _n)
+	-- 数値入力を32bit整数として取得
 	_n = ('I4'):unpack(('f'):pack(gN(c)))
 	return _n
 end
 function gNB(c, _v, _n)
+	-- 数値入力を長さ32の bool 配列として取得
 	_v, _n = {}, gNf(c)
 	for i = 0, 31 do _v[1 + i] = _n>>i&1 ~= 0 end
 	return _v
@@ -32,7 +34,10 @@ function sel(f, a, b)
 	return f and a or b
 end
 function bitarr(arr, l, rev, _v)
-	for i = 1, l do _v = (_v or 0) | sel(arr[i], 1, 0)<<sel(rev, i - 1, l - i)end
+	-- 長さ l の bool 配列 arr を2進整数に変換、rev が true なら反転
+	for i = 1, l do
+		_v = (_v or 0) | sel(arr[i], 1, 0)<<sel(rev, i - 1, l - i)
+	end
 	return _v
 end
 function filter(arr, fn, _)
@@ -54,10 +59,18 @@ function encode(c, p, _)
 	return _
 end
 
-doors_l, doors_r = pI('Left side doors'), pI('Right side doors')
-to_f_0x4a = bitarr({P.getBool('Double Decker')}, 1)<<22 | pI('Car No.')<<18 | pI('Front Pantograph')<<12 | pI('Rear Pantograph')<<10 | doors_l<<7 | doors_r<<4 | pI('Powered Axle')<<2 | pI('Cab')
+ndoors_left, ndoors_right = pI('Left side doors'), pI('Right side doors')
+to_f_0x4a = bitarr({P.getBool('Double Decker')}, 1)<<22
+	| pI('Car No.')<<18
+	| pI('Front Pantograph')<<12
+	| pI('Rear Pantograph')<<10
+	| ndoors_left<<7
+	| ndoors_right<<4
+	| pI('Powered Axle')<<2
+	| pI('Cab')
 
 function onTick()
+	sos_button = gB(3)
 	equipment_unicast_front, equipment_unicast_back, write_0x4c, swap_0x4c = gB(6), gB(7), gB(8), gB(9)
 	send_0x4a, deny_mode_change, request_mode_change, control, extension_mode = gB(28), gB(29), gB(30), gB(31), gB(32)
 
@@ -65,13 +78,15 @@ function onTick()
 	brake_value, power_value = gN(5), gN(6)
 	equipment_status, equipment_broadcast, door_mode, doorcut_front, doorcut_back, addr1, addr2, memory_value = gNB(7), gNf(8), gI(9), gI(10), gI(11), gI(12), gI(13), gI(14)
 
-	door_status_left, door_status_right = {U(equipment_status, 1, doors_l)}, {U(equipment_status, 7, 6 + doors_r)}
+	door_status_left, door_status_right = {U(equipment_status, 1, ndoors_left)}, {U(equipment_status, 7, 6 + ndoors_right)}
 	data_2_input, data_0x42_input = equipment_broadcast&63, equipment_broadcast>>6&4095
 	door_open = data_0x42_input>>2&2 | data_0x42_input>>1&1
 	door_update = (equipment_broadcast>>18&1)<<18 | (equipment_broadcast>>19&1)<<10 | (equipment_broadcast>>20&1)<<2
 	equipment_unicast_data = gNf(15)>>2&1023
 
 	equipment_unicast_car_count = gI(16)
+	doorcut_sf, doorcut_sb = gI(17), gI(18)
+	doorcut_status = M.max(ndoors_left, ndoors_right) - doorcut_sf - doorcut_sb <= 0
 	cycle_i = gI(32)
 
 	cycle = filter(COMMAND_CYCLE, function(m)
@@ -81,14 +96,20 @@ function onTick()
 	end)
 
 	door_open_left, door_open_right = false, false
-	for i = 1, doors_l do
-		door_open_left = door_open_left or door_status_left[i]
+	for i = 1, ndoors_left do
+		if door_status_left[i] then
+			door_open_left = true
+			break
+		end
 	end
-	for i = 1, doors_r do
-		door_open_right = door_open_right or door_status_right[i]
+	for i = 1, ndoors_right do
+		if door_status_right[i] then
+			door_open_right = true
+			break
+		end
 	end
 
-	data_1 = bitarr({gB(1), gB(2), gB(3), door_open_left, door_open_right}, 5)<<19
+	data_1 = bitarr({gB(1), gB(2), sos_button, door_open_left, door_open_right}, 5)<<19
 	data_2 = data_1 | data_2_input<<13
 
 	command_type = nil
@@ -132,7 +153,10 @@ function onTick()
 		to_front = to_f_0x4a
 		to_back = swap(swap(swap(swap(to_front, 0, 1, 1), 2, 3, 1), 4, 7, 3), 10, 12, 2)
 	elseif command_type == 0x4b then
-		to_front = bitarr({equipment_status[21], equipment_status[20], false, false, equipment_status[19], equipment_status[18], equipment_status[17]}, 7)<<17 | bitarr({U(equipment_status, 13, 16)}, 4)<<13 | bitarr(door_status_left, doors_l)<<7 | bitarr(door_status_right, doors_r)<<1
+		to_front = bitarr({equipment_status[21], equipment_status[20], sos_button, doorcut_status, equipment_status[19], equipment_status[18], equipment_status[17]}, 7)<<17
+			| bitarr({U(equipment_status, 13, 16)}, 4)<<13
+			| bitarr(door_status_left, ndoors_left)<<7
+			| bitarr(door_status_right, ndoors_right)<<1
 		to_back = swap(swap(to_front | 1, 1, 7, 6), 13, 15, 2)
 	elseif command_type == 0x4c then
 		to_front = sel(swap_0x4c, 1, 0)<<23 | (addr1&7)<<20 | sel(swap_0x4c, addr2, memory_value)&0xFFFFF
