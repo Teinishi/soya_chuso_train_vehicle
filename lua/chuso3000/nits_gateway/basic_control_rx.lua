@@ -1,4 +1,5 @@
 ACCEPT_MODE_ID = {[0x240001] = true}
+is_outbound = property.getBool'Direction'
 
 sB, sN = output.setBool, output.setNumber
 
@@ -79,6 +80,7 @@ function onTick()
 	sB(20, data_0x42 ~= nil)
 	sN(20, data_0x42 or 0)
 
+	sN(30, (is_outbound and cars_b or cars_f) + 1)
 	sB(31, cancel_mode_change)
 	sB(32, reject_mode_change)
 	sN(31, cars_f)

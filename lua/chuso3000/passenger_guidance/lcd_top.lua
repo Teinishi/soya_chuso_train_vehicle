@@ -1,10 +1,9 @@
 train_type_colors = {} -- @require lua/route_data_lua.py lcd_train_type_color_table
 
-car_no = property.getNumber('Car Number')
-
-train_type = 0
+car_number, train_type = 0, 0
 function onTick()
-    train_type = input.getNumber(2)
+    train_type = math.floor(input.getNumber(2))
+	car_number = math.floor(input.getNumber(20))
 end
 
 S=screen
@@ -35,7 +34,7 @@ function onDraw()
 	C(5,5,5)R(0,0,96,64)
 	C(2,2,2)R(0,8,96,56)
 	C(200,200,200)R(0,24,96,40)R(88,2,7,5)R(89,1,5,7)
-	C(0,0,0)draw_number(90,2,car_no)
+	C(0,0,0)draw_number(90,2,car_number)
 
 	c = train_type_colors[train_type]
 	if c then

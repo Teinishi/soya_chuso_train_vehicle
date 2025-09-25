@@ -60,14 +60,17 @@ function encode(c, p, _)
 end
 
 ndoors_left, ndoors_right = pI('Left side doors'), pI('Right side doors')
-to_f_0x4a = bitarr({P.getBool('Double Decker')}, 1)<<22
-	| pI('Car No.')<<18
+payload_0x4a_front = bitarr({P.getBool('Double Decker')}, 1)<<22
 	| pI('Front Pantograph')<<12
 	| pI('Rear Pantograph')<<10
 	| ndoors_left<<7
 	| ndoors_right<<4
 	| pI('Powered Axle')<<2
 	| pI('Cab')
+payload_0x4a_back = swap(payload_0x4a_front, 0, 1, 1)
+payload_0x4a_back = swap(payload_0x4a_back, 2, 3, 1)
+payload_0x4a_back = swap(payload_0x4a_back, 4, 7, 3)
+payload_0x4a_back = swap(payload_0x4a_back, 10, 12, 2)
 
 function onTick()
 	sos_button = gB(3)
@@ -87,6 +90,7 @@ function onTick()
 	equipment_unicast_car_count = gI(16)
 	doorcut_sf, doorcut_sb = gI(17), gI(18)
 	doorcut_status = M.max(ndoors_left, ndoors_right) - doorcut_sf - doorcut_sb <= 0
+	car_number = clamp(gI(19), 0, 15)
 	cycle_i = gI(32)
 
 	cycle = filter(COMMAND_CYCLE, function(m)
@@ -150,8 +154,8 @@ function onTick()
 		to_front = bitarr({equipment_unicast_back}, 1)<<23 | (equipment_unicast_car_count&15)<<19 | equipment_unicast_data
 		to_back = swap(to_front~1<<23, 0, 2, 2)
 	elseif command_type == 0x4a then
-		to_front = to_f_0x4a
-		to_back = swap(swap(swap(swap(to_front, 0, 1, 1), 2, 3, 1), 4, 7, 3), 10, 12, 2)
+		to_front = payload_0x4a_front | car_number<<18
+		to_back = payload_0x4a_back | car_number<<18
 	elseif command_type == 0x4b then
 		to_front = bitarr({equipment_status[21], equipment_status[20], sos_button, doorcut_status, equipment_status[19], equipment_status[18], equipment_status[17]}, 7)<<17
 			| bitarr({U(equipment_status, 13, 16)}, 4)<<13

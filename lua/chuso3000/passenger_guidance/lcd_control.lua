@@ -60,7 +60,7 @@ function clamp_range(range, a, b)
 end
 
 function onTick()
-	op_code_a, op_code_b, loc_code, menu_guidance, doorcut_f, doorcut_b, stop_pattern = gI(3), gI(4), gI(6), gI(7), gI(12), gI(13), gI(15)
+	op_code_a, op_code_b, loc_code, menu_guidance, doorcut_f, doorcut_b, stop_pattern, car_number = gI(3), gI(4), gI(6), gI(7), gI(12), gI(13), gI(15), gI(30)
 	eb, show_menu_guidance = gB(1), gB(2) and menu_guidance ~= 0
 	anim = gN(14) % 3
 
@@ -203,4 +203,6 @@ function onTick()
 	sN(19, jsms_arrow_pos)
 	sB(17, jsms_stop_1)
 	sB(18, jsms_stop_2)
+
+	sN(20, car_number)
 end

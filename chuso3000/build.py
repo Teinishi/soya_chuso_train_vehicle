@@ -40,9 +40,9 @@ vehicle_tc.set_custom_name("TRAIN1_H3", custom_name="TRAIN4_H3")
 
 # マイコンプロパティ
 vehicle_mc.set_microprocessor_property(
-    "Motor", "yes", microprocessor_name="ME SiC Sound")
+    "Running Sound", "4,6", microprocessor_name="TETSUDAN VVVF Sound (ME SiC)")
 vehicle_tc.set_microprocessor_property(
-    "Motor", "no", microprocessor_name="ME SiC Sound")
+    "Running Sound", "4", microprocessor_name="TETSUDAN VVVF Sound (ME SiC)")
 
 vehicle_mc.set_microprocessor_property(
     "Car Type", "3001", microprocessor_name="CHUSO 3000 Main Curcit")
@@ -59,30 +59,11 @@ vehicle_mc.set_microprocessor_property(
 vehicle_tc.set_microprocessor_property(
     "Rear Pantograph", "None", microprocessor_name="NITS Gateway")
 
-vehicle_mc.set_microprocessor_property(
-    "Car No.", "2", microprocessor_name="NITS Gateway")
-vehicle_tc.set_microprocessor_property(
-    "Car No.", "1", microprocessor_name="NITS Gateway")
-
-vehicle_mc.set_microprocessor_property(
-    "Car Number", "2", microprocessor_name="Passenger Guidance")
-vehicle_tc.set_microprocessor_property(
-    "Car Number", "1", microprocessor_name="Passenger Guidance")
-
-vehicle_mc.set_microprocessor_property(
-    "Direction", "Outbound", microprocessor_name="Passenger Guidance")
-vehicle_tc.set_microprocessor_property(
-    "Direction", "Inbound", microprocessor_name="Passenger Guidance")
-
-vehicle_mc.set_microprocessor_property(
-    "Direction", "Outbound", microprocessor_name="Operation Manager")
-vehicle_tc.set_microprocessor_property(
-    "Direction", "Inbound", microprocessor_name="Operation Manager")
-
-vehicle_mc.set_microprocessor_property(
-    "Direction", "Outbound", microprocessor_name="JSMS Transponder")
-vehicle_tc.set_microprocessor_property(
-    "Direction", "Inbound", microprocessor_name="JSMS Transponder")
+for name in ["NITS Gateway", "Passenger Guidance", "Operation Manager", "JSMS Transponder"]:
+    vehicle_mc.set_microprocessor_property(
+        "Direction", "Outbound", microprocessor_name=name)
+    vehicle_tc.set_microprocessor_property(
+        "Direction", "Inbound", microprocessor_name=name)
 
 # 車番・床下機器を追加読み込み
 vehicle_mc.include_vehicle(Vehicle.from_file(MC_DIFF_VEHICLE))
@@ -162,7 +143,7 @@ vehicle_tc_jsms.set_microprocessor_property(
 
 # 書き出し
 resolver = ScriptResolver()
-build_params = {"is_jsms": True} # TODO: Luaの非JSMS化対応が完了したらFalseにする
+build_params = {"is_jsms": True}  # TODO: Luaの非JSMS化対応が完了したらFalseにする
 vehicle_mc.resolve_lua_script(build_params, resolver=resolver)
 vehicle_tc.resolve_lua_script(build_params, resolver=resolver)
 build_params = {"is_jsms": True}
