@@ -52,6 +52,7 @@ function onTick()
 
 	output.setBool(1, eb)
 	output.setBool(2, emergency_run)
+	output.setBool(3, m == 0)
 	output.setNumber(1, nits_brake)
 	output.setNumber(2, nits_power)
 	output.setNumber(3, reverser)
