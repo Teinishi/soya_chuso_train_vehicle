@@ -56,7 +56,7 @@ end
 
 function onTick()
 	local updated = gB(3) or gB(6)
-	local set_manual, go_prev, go_next, set_auto, update_auto, attempt_swap, door, stop, update_nearest = gB(9), gB(10), gB(11), gB(12), gB(13), gB(14), gB(15), gB(16), gB(17)
+	local set_manual, go_prev, go_next, set_auto, update_auto, attempt_swap, door, stopped, update_nearest = gB(9), gB(10), gB(11), gB(12), gB(13), gB(14), gB(15), gB(16), gB(17)
 	local op_code, stby_op_code, loc_code, set_manual_val = gI(3), gI(4), gI(6), gI(9)
 	local gps_x, gps_y = gN(10), gN(11)
 
@@ -153,7 +153,7 @@ function onTick()
 	elseif set_auto or (update_auto or attempt_swap or update_nearest) and not is_manual then
 		local route = get_route(origin, destination)
 		nearest()
-		if door and nearest_id ~= 0 or stop and not_for_service[nearest_id] then
+		if door and nearest_id ~= 0 or stopped and not_for_service[nearest_id] then
 			swap = attempt_swap and nearest_id == destination and nearest_id == stby_origin
 			if swap then
 				route = get_route(stby_origin, stby_destination)
