@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from typing import Callable, TypeVar
 
 _if_pattern = re.compile(r'--\s*@\s*if\s+(?P<condition>.*)')
 _elif_pattern = re.compile(r'--\s*@\s*elif\s+(?P<condition>.*)')
@@ -32,7 +33,7 @@ def parse_template(lines: list[str], file: str) -> list[TemplateNode]:
 
         m = _if_pattern.fullmatch(stripped)
         if m is not None:
-            expr = m.group("condition").strip()
+            expr = m.group('condition').strip()
             block = TemplateIfBlock(branches=[(expr, [])])
             stack[-1].append(block)
             stack.append(block.branches[-1][1])
@@ -41,7 +42,7 @@ def parse_template(lines: list[str], file: str) -> list[TemplateNode]:
 
         m = _elif_pattern.fullmatch(stripped)
         if m is not None:
-            expr = m.group("condition").strip()
+            expr = m.group('condition').strip()
             if not current_if:
                 raise SyntaxError(
                     f'@elif has not corresponding @if: line {i + 1}, file: "{file}"')
@@ -72,13 +73,16 @@ def parse_template(lines: list[str], file: str) -> list[TemplateNode]:
         stack[-1].append(TemplateText(line))
 
     if len(stack) != 1:
-        raise SyntaxError("Unmatched @if/@end")
+        raise SyntaxError('Unmatched @if/@end')
 
     return root
 
 
-def render_template(nodes: list[TemplateNode], context: dict, eval_expr) -> str:
-    result = []
+Context = TypeVar('Context')
+
+
+def render_template(nodes: list[TemplateNode], context: Context, eval_expr: Callable[[str, Context], bool]) -> str:
+    result: list[str] = []
     for node in nodes:
         if isinstance(node, TemplateText):
             result.append(node.value)
@@ -90,5 +94,5 @@ def render_template(nodes: list[TemplateNode], context: dict, eval_expr) -> str:
                     break
 
         else:
-            raise ValueError(f"Unknown node: {node}")
-    return "".join(result)
+            raise ValueError(f'Unknown node: {node}')
+    return ''.join(result)

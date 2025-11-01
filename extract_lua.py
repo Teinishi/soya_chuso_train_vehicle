@@ -10,7 +10,7 @@ use_pattern = re.compile(
 
 
 def main(input_path: str, output_path: str, skip_use: bool):
-    with open(input_path, encoding="utf-8") as f:
+    with open(input_path, encoding='utf-8') as f:
         xml_text = f.read()
 
     escape_multiline_attrs = EscapeMultilineAttributes()
@@ -18,11 +18,11 @@ def main(input_path: str, output_path: str, skip_use: bool):
 
     microprocessors: dict[str, list[list[str]]] = {}
 
-    for mpdef in root.findall(".//microprocessor_definition"):
-        scripts = []
+    for mpdef in root.findall('.//microprocessor_definition'):
+        scripts: list[str] = []
         for o in mpdef.findall('group/components/c[@type="56"]/object'):
             scripts.append(
-                escape_multiline_attrs.restore_value(o.get("script")))
+                escape_multiline_attrs.restore_value(o.get('script', '')))
 
         if skip_use:
             scripts = [
@@ -31,7 +31,8 @@ def main(input_path: str, output_path: str, skip_use: bool):
         if len(scripts) == 0:
             continue
 
-        name = mpdef.get("name")
+        name = mpdef.get('name')
+        assert name is not None
         if name not in microprocessors:
             microprocessors[name] = [scripts]
         else:
@@ -44,20 +45,20 @@ def main(input_path: str, output_path: str, skip_use: bool):
     for name, m in microprocessors.items():
         is_single = len(m) == 1
         for i, scripts in enumerate(m):
-            dirname = name if is_single else f"{name} ({i + 1})"
-            dirname = invalid_path_chars.sub("", dirname)
+            dirname = name if is_single else f'{name} ({i + 1})'
+            dirname = invalid_path_chars.sub('', dirname)
             dirpath = os.path.join(output_path, dirname)
             os.makedirs(dirpath, exist_ok=True)
             for j, script in enumerate(scripts):
-                with open(os.path.join(dirpath, f"{j}.lua"), "w", encoding="utf-8") as f:
+                with open(os.path.join(dirpath, f'{j}.lua'), 'w', encoding='utf-8') as f:
                     f.write(script)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("vehicle", type=str)
-    parser.add_argument("output", type=str)
-    parser.add_argument("--skip-use", action="store_true")
+    parser.add_argument('vehicle', type=str)
+    parser.add_argument('output', type=str)
+    parser.add_argument('--skip-use', action='store_true')
     args = parser.parse_args()
 
     main(args.vehicle, args.output, args.skip_use)

@@ -1,8 +1,9 @@
 import ast
 import operator
+from typing import Any, Callable, Iterable
 
 # サポートする演算子
-_BIN_OPS = {
+_BIN_OPS: dict[Any, Callable[[Any, Any], Any]] = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
     ast.Mult: operator.mul,
@@ -12,7 +13,7 @@ _BIN_OPS = {
     ast.Pow: operator.pow,
 }
 
-_CMP_OPS = {
+_CMP_OPS: dict[Any, Callable[[Any, Any], bool]] = {
     ast.Eq: operator.eq,
     ast.NotEq: operator.ne,
     ast.Lt: operator.lt,
@@ -21,29 +22,29 @@ _CMP_OPS = {
     ast.GtE: operator.ge,
 }
 
-_BOOL_OPS = {
+_BOOL_OPS: dict[Any, Callable[[Iterable[object]], bool]] = {
     ast.And: all,
     ast.Or: any,
 }
 
-_UNARY_OPS = {
+_UNARY_OPS: dict[Any, Callable[[Any], Any]] = {
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
     ast.Not: operator.not_,
 }
 
 
-def safe_eval(expr: str, context: dict = None):
-    tree = ast.parse(expr, mode="eval")
+def safe_eval(expr: str, context: dict[str, Any] | None = None):
+    tree = ast.parse(expr, mode='eval')
 
-    def _eval(node):
+    def _eval(node: ast.Expression | ast.expr | ast.Name | ast.Constant | ast.Attribute | ast.Subscript | ast.BinOp | ast.Compare | ast.BoolOp | ast.UnaryOp) -> Any:
         if isinstance(node, ast.Expression):
             return _eval(node.body)
 
         # 名前（変数）
         elif isinstance(node, ast.Name):
             if context is None or node.id not in context:
-                raise NameError(f"Unknown variable: {node.id}")
+                raise NameError(f'Unknown variable: {node.id}')
             return context[node.id]
 
         # 定数
@@ -57,7 +58,7 @@ def safe_eval(expr: str, context: dict = None):
                 if node.attr not in v:
                     raise KeyError(
                         f'Attribute "{node.attr}" does not exist in dict "{ast.unparse(node.value)}"')
-                return v[node.attr]
+                return v[node.attr]  # type: ignore
             else:
                 raise TypeError(
                     f'Attempt to get attribute "{node.attr}" of non-dict "{ast.unparse(node.value)}"')
@@ -69,15 +70,15 @@ def safe_eval(expr: str, context: dict = None):
                 if k not in v:
                     raise KeyError(
                         f'Key {repr(k)} does not exist in dict "{ast.unparse(node.value)}"')
-                return v[k]
+                return v[k]  # type: ignore
             elif isinstance(v, list) or isinstance(v, tuple):
                 if not (type(k) is int or type(k) is float and k.is_integer()):
                     raise ValueError(
                         f'Attempt to subscript with non-int index {repr(k)} of "{ast.unparse(node.value)}"')
-                elif k < 0 or len(v) <= k:
+                elif k < 0 or len(v) <= k:  # type: ignore
                     raise IndexError(
                         f'Index {repr(k)} is out of bounds for "{ast.unparse(node.value)}"')
-                return v[k]
+                return v[k]  # type: ignore
             else:
                 raise TypeError(
                     f'Attempt to subscript by {repr(k)} of "{ast.unparse(node.value)}"')
@@ -86,7 +87,7 @@ def safe_eval(expr: str, context: dict = None):
         elif isinstance(node, ast.BinOp):
             if type(node.op) not in _BIN_OPS:
                 raise ValueError(
-                    f"Unsupported operator: {ast.unparse(node.op)}")
+                    f'Unsupported operator: {ast.unparse(node.op)}')
             return _BIN_OPS[type(node.op)](_eval(node.left), _eval(node.right))
 
         # 比較演算 (a < b, a == b など)
@@ -95,7 +96,7 @@ def safe_eval(expr: str, context: dict = None):
             for op, comparator in zip(node.ops, node.comparators):
                 if type(op) not in _CMP_OPS:
                     raise ValueError(
-                        f"Unsupported comparator: {ast.unparse(op)}")
+                        f'Unsupported comparator: {ast.unparse(op)}')
                 right = _eval(comparator)
                 if not _CMP_OPS[type(op)](left, right):
                     return False
@@ -106,7 +107,7 @@ def safe_eval(expr: str, context: dict = None):
         elif isinstance(node, ast.BoolOp):
             if type(node.op) not in _BOOL_OPS:
                 raise ValueError(
-                    f"Unsupported bool op: {ast.unparse(node.op)}")
+                    f'Unsupported bool op: {ast.unparse(node.op)}')
             values = [_eval(v) for v in node.values]
             return _BOOL_OPS[type(node.op)](values)
 
@@ -114,10 +115,10 @@ def safe_eval(expr: str, context: dict = None):
         elif isinstance(node, ast.UnaryOp):
             if type(node.op) not in _UNARY_OPS:
                 raise ValueError(
-                    f"Unsupported unary op: {ast.unparse(node.op)}")
+                    f'Unsupported unary op: {ast.unparse(node.op)}')
             return _UNARY_OPS[type(node.op)](_eval(node.operand))
 
         else:
-            raise ValueError(f"Unsupported syntax: {ast.unparse(node)}")
+            raise ValueError(f'Unsupported syntax: {ast.unparse(node)}')
 
     return _eval(tree)

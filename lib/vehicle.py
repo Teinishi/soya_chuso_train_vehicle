@@ -1,3 +1,4 @@
+from __future__ import annotations
 from collections import defaultdict
 import itertools
 import shutil
@@ -5,15 +6,16 @@ import typing
 import copy
 import os
 import glob
-from typing import Literal
+from typing import Any, Literal, TypeAlias, TypedDict, Unpack
 from xml.etree import ElementTree as ET
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
 from lib.script_resolver import ScriptResolver
 
-Tuple3i = tuple[int, int, int]
-Box = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
+StrPath: TypeAlias = str | os.PathLike[str]
+Tuple3i: TypeAlias = tuple[int, int, int]
+Box: TypeAlias = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
 
 LOGIC_TYPES = {
     "bool": 0,
@@ -24,6 +26,13 @@ LOGIC_TYPES = {
     "audio": 7,
     "rope": 8
 }
+
+
+class _ComponentSelector(TypedDict, total=False):
+    position: Vector3i | Tuple3i | None
+    box: Box | None
+    custom_name: str | None
+    microprocessor_name: str | None
 
 
 def _remove_non_ascii(text: str) -> str:
@@ -88,7 +97,7 @@ class Vehicle:
     _position_logic_map: defaultdict[Vector3i, set[LogicNodeLink]]
 
     @staticmethod
-    def from_file(path: str) -> typing.Self:
+    def from_file(path: str) -> Vehicle:
         with open(path, encoding="utf-8") as f:
             xml_text = f.read()
         v = Vehicle(xml_text)
@@ -113,6 +122,7 @@ class Vehicle:
 
     def _add_vehicle(self, vehicle: ET.Element):
         bodies = self._root.find("./bodies")
+        assert bodies is not None
         for body in vehicle.findall("./bodies/body"):
             if body not in bodies:
                 bodies.append(body)
@@ -121,6 +131,10 @@ class Vehicle:
                 self._add_component(VehicleComponent(c, body))
 
         logic_node_links = self._root.find("./logic_node_links")
+        if logic_node_links is None:
+            logic_node_links = ET.Element("logic_node_links")
+            self._root.append(logic_node_links)
+
         for element in vehicle.findall("./logic_node_links/logic_node_link"):
             if element not in logic_node_links:
                 logic_node_links.append(element)
@@ -132,6 +146,7 @@ class Vehicle:
         element = component.get_element()
         body = component.get_body()
         components = body.find("./components")
+        assert components is not None
         if element not in components:
             components.append(element)
 
@@ -159,7 +174,9 @@ class Vehicle:
                 self._remove_logic_link(link)
 
         body = component.get_body()
-        body.find("./components").remove(component.get_element())
+        components = body.find("./components")
+        assert components is not None
+        components.remove(component.get_element())
         self._components.remove(component)
         del self._position_component_map[component.get_position()]
         self._body_component_map[body].remove(component)
@@ -191,7 +208,13 @@ class Vehicle:
             "voxel_pos_1",
             Vector3i(position_1).to_xml_dict()
         ))
-        self._root.find("./logic_node_links").append(element)
+
+        logic_node_links = self._root.find("./logic_node_links")
+        if logic_node_links is None:
+            logic_node_links = ET.Element("logic_node_links")
+            self._root.append(logic_node_links)
+        logic_node_links.append(element)
+
         self._add_logic_link(LogicNodeLink(element))
 
     def _add_logic_link(self, link: LogicNodeLink):
@@ -211,7 +234,7 @@ class Vehicle:
         self._component_mods += other._component_mods
         self._add_vehicle(other._root)
 
-    def save(self, path):
+    def save(self, path: StrPath):
         # .bin ファイルをリストアップ
         mod_components: dict[str, str] = {}
         for mods_source in self._component_mods:
@@ -245,12 +268,15 @@ class Vehicle:
 
     def get_components(
         self,
-        position: Vector3i | Tuple3i | None = None,
-        box: Box | None = None,
-        custom_name: str | None = None,
-        microprocessor_name: str | None = None
+        **kwargs: Unpack[_ComponentSelector]
     ) -> list[VehicleComponent]:
         result: list[VehicleComponent] | None = None
+
+        position = kwargs.get('position')
+        box = kwargs.get('box')
+        custom_name = kwargs.get('custom_name')
+        microprocessor_name = kwargs.get('microprocessor_name')
+
         if position is not None:
             position = Vector3i(position)
             if position not in self._position_component_map:
@@ -264,49 +290,72 @@ class Vehicle:
                     result.append(self._position_component_map[p])
 
         if custom_name is not None:
-            result = copy.copy(self._custom_name_map[custom_name])\
+            result = list(self._custom_name_map[custom_name])\
                 if result is None else \
                 [r for r in result if r in self._custom_name_map[custom_name]]
 
         if microprocessor_name is not None:
-            result = copy.copy(self._microprocessor_name_map[microprocessor_name])\
+            result = list(self._microprocessor_name_map[microprocessor_name])\
                 if result is None else \
                 [r for r in result if r in self._microprocessor_name_map[microprocessor_name]]
 
         return result if result is not None else list(self._components)
 
-    def get_component(self, **args) -> VehicleComponent:
-        components = self.get_components(**args)
+    def get_component(
+        self,
+        **kwargs: Unpack[_ComponentSelector]
+    ) -> VehicleComponent:
+        components = self.get_components(**kwargs)
         if len(components) != 1:
             raise ValueError(
                 f"get_component should find 1 components, but {len(components)} found")
         else:
             return next(iter(components))
 
-    def remove_components(self, **args):
-        components = self.get_components(**args)
+    def remove_components(
+        self,
+        **kwargs: Unpack[_ComponentSelector]
+    ):
+        components = self.get_components(**kwargs)
         for component in components:
             self._remove_component(component)
 
-    def remove_component(self, **args):
-        self._remove_component(self.get_component(**args))
+    def remove_component(
+        self,
+        **kwargs: Unpack[_ComponentSelector]
+    ):
+        self._remove_component(self.get_component(**kwargs))
 
-    def set_attribute(self, attr_name: str, value: str | int | float | bool, **args):
+    def set_attribute(
+        self,
+        attr_name: str,
+        value: str | int | float | bool,
+        **kwargs: Unpack[_ComponentSelector]
+    ):
         if attr_name == "custom_name":
-            self.set_custom_name(value, **args)
+            self.set_custom_name(str(value), **kwargs)
 
-        self.get_component(**args)._set_attribute(attr_name, value)
+        self.get_component(**kwargs).set_attribute(attr_name, value)
 
-    def set_custom_name(self, new_custom_name: str, **args):
-        component = self.get_component(**args)
-        if component._custom_name is not None:
-            self._custom_name_map[component._custom_name].remove(component)
-        component._set_custom_name(new_custom_name)
+    def set_custom_name(
+        self,
+        new_custom_name: str,
+        **kwargs: Unpack[_ComponentSelector]
+    ):
+        component = self.get_component(**kwargs)
+        if component.custom_name is not None:
+            self._custom_name_map[component.custom_name].remove(component)
+        component.set_custom_name(new_custom_name)
         self._custom_name_map[new_custom_name].add(component)
 
-    def set_microprocessor_property(self, property_name: str, value: str | int, **args):
-        self.get_component(**args)\
-            ._set_microprocessor_property(property_name, value)
+    def set_microprocessor_property(
+        self,
+        property_name: str,
+        value: str | int,
+        **kwargs: Unpack[_ComponentSelector]
+    ):
+        self.get_component(**kwargs)\
+            .set_microprocessor_property(property_name, value)
 
     def merge_bodies(self, component1: VehicleComponent, component2: VehicleComponent):
         i1 = self._bodies.index(component1.get_body())
@@ -324,15 +373,17 @@ class Vehicle:
         del self._body_component_map[body2]
 
         bodies = self._root.find("./bodies")
+        assert bodies is not None
         bodies.remove(body2)
 
-    def resolve_lua_script(self, build_params=None, resolver: ScriptResolver | None = None):
+    def resolve_lua_script(self, build_params: Any = None, resolver: ScriptResolver | None = None):
         if resolver is None:
             resolver = ScriptResolver()
 
         for m in itertools.chain.from_iterable(self._microprocessor_name_map.values()):
-            for o in m._element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
+            for o in m.element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
                 script = o.get("script")
+                assert script is not None
                 script = self._escape_multiline_attrs.restore_value(script)
                 resolved = resolver.resolve_script(
                     script, build_params=build_params, leave_filename=True)

@@ -1,5 +1,5 @@
+from __future__ import annotations
 from dataclasses import dataclass
-import typing
 
 
 @dataclass(frozen=True)
@@ -8,26 +8,26 @@ class Vector3i:
     y: int
     z: int
 
-    def __init__(self, x: int | typing.Self | tuple[int, int, int], y: int | None = None, z: int | None = None):
+    def __init__(self, x: int | Vector3i | tuple[int, int, int], y: int | None = None, z: int | None = None):
         if isinstance(x, Vector3i):
             x, y, z = x.x, x.y, x.z
         elif isinstance(x, tuple):
             x, y, z = x
-        object.__setattr__(self, "x", x)
-        object.__setattr__(self, "y", y)
-        object.__setattr__(self, "z", z)
+        object.__setattr__(self, 'x', x)
+        object.__setattr__(self, 'y', y)
+        object.__setattr__(self, 'z', z)
 
-    def __add__(self, other: typing.Self) -> typing.Self:
+    def __add__(self, other: Vector3i) -> Vector3i:
         return Vector3i(self.x + other.x, self.y + other.y, self.z + other.z)
 
     def __repr__(self) -> str:
-        return f"[{self.x}, {self.y}, {self.z}]"
+        return f'[{self.x}, {self.y}, {self.z}]'
 
-    def to_xml_dict(self) -> dict[str, int]:
+    def to_xml_dict(self) -> dict[str, str]:
         return {
-            "x": str(self.x),
-            "y": str(self.y),
-            "z": str(self.z)
+            'x': str(self.x),
+            'y': str(self.y),
+            'z': str(self.z)
         }
 
 
@@ -36,17 +36,14 @@ class Matrix3i:
     _mat: list[int]
 
     def __init__(self, text: str):
-        mat = list(map(int, text.split(",")))
+        mat = list(map(int, text.split(',')))
         if len(mat) != 9:
-            raise ValueError("Matrix text does not have 9 numbers")
-        object.__setattr__(self, "_mat", mat)
+            raise ValueError('Matrix text does not have 9 numbers')
+        object.__setattr__(self, '_mat', mat)
 
     @staticmethod
-    def identity() -> typing.Self:
-        return Matrix3i("1,0,0,0,1,0,0,0,1")
-
-    def __repr__(self):
-        return f"[[{self._m00}, {self._m01}, {self._m02}],\n [{self._m10}, {self._m11}, {self._m12}],\n [{self._m20}, {self._m21}, {self._m22}]]"
+    def identity() -> Matrix3i:
+        return Matrix3i('1,0,0,0,1,0,0,0,1')
 
     def multiply_on_vector(self, vec: Vector3i) -> Vector3i:
         x, y, z = vec.x, vec.y, vec.z
