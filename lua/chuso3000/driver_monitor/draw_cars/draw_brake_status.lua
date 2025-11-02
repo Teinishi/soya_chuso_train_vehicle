@@ -103,13 +103,13 @@ function onDraw()
 				data_0x43=data[i+1][1]
 				pwr_val,brk_val=((data_0x43>>9&1023)+512)%1024-512,(data_0x43&511)*2
 				car_cx=draw_x+i*interval+car_width//2
-				draw_bar(car_cx-2,20,2,-8*clamp(brk_val/600,0,1),clr.white)
+				draw_bar(car_cx-2,20,2,-8*clamp(brk_val/400,0,1),clr.white)
 				draw_number3(car_cx-6,21,brk_val,3,clr.white)
 				if not ext_mode or data[i+1][2]>>2&3~=0 then
 					pwr_clr=clr.white
 					if pwr_val>0 then pwr_clr=clr.cyan
 					elseif pwr_val<0 then pwr_clr=clr.yellow end
-					draw_bar(car_cx+1,20,2,-8*clamp(M.abs(pwr_val)/600,0,1),pwr_clr)
+					draw_bar(car_cx+1,20,2,-8*clamp(M.abs(pwr_val)/400,0,1),pwr_clr)
 					draw_number3(car_cx-3,27,M.abs(pwr_val),3,pwr_clr)
 				end
 			end
