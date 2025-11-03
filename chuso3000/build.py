@@ -115,6 +115,16 @@ for v in default_vehicles:
     v.add_logic_link("electric", battery_position, (0, 2, 26))
     v.add_logic_link("electric", battery_position, (3, 4, 26))
 
+    # マイコンプロパティ
+    v.set_microprocessor_property(
+        "Default Operation Number", 0, microprocessor_name="NITS Gateway")
+    v.set_microprocessor_property(
+        "Default ARC", 0, microprocessor_name="NITS Gateway")
+    v.set_microprocessor_property(
+        "Default Operation Code A", 0, microprocessor_name="NITS Gateway")
+    v.set_microprocessor_property(
+        "Default Operation Code B", 0, microprocessor_name="NITS Gateway")
+
 # JSMS仕様
 jsms_vehicles = [vehicle_mc_jsms, vehicle_tc_jsms]
 jsms_diff_vehicle: Vehicle = Vehicle.from_file(JSMS_DIFF_VEHICLE)

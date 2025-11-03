@@ -134,7 +134,8 @@ class VehicleComponent:
             if type(new_value) is int or type(new_value) is float:
                 v = prop_number.find('./v')
                 assert v is not None
-                v.set('value', str(float(new_value)))
+                v.set('text', str(new_value))
+                v.set('value', str(new_value))
                 count += 1
             else:
                 raise TypeError(

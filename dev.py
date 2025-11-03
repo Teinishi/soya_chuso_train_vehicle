@@ -55,7 +55,8 @@ for folder in TARGET_FOLDERS:
                     dirs_exist_ok=True
                 )
 
-shutil.rmtree(dist_path)
+if dist_path.is_dir():
+    shutil.rmtree(dist_path)
 
 subprocess.run(root_path.joinpath("build.bat"), check=True)
 
