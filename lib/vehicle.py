@@ -26,7 +26,7 @@ class _ComponentSelector(TypedDict, total=False):
 
 
 def _remove_non_ascii(text: str) -> str:
-    return "".join(c for c in text if c.isascii())
+    return ''.join(c for c in text if c.isascii())
 
 
 def _normalize_box(box: Box) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
@@ -54,14 +54,14 @@ class LogicNodeLink:
     _position_1: Vector3i
 
     def __init__(self, element: ET.Element):
-        vp0 = element.find("voxel_pos_0")
-        vp1 = element.find("voxel_pos_1")
+        vp0 = element.find('voxel_pos_0')
+        vp1 = element.find('voxel_pos_1')
         self._element = element
-        self._logic_type = int(element.get("type", 0))
+        self._logic_type = int(element.get('type', 0))
         self._position_0 = Vector3i(0, 0, 0) if vp0 is None else Vector3i(
-            int(vp0.get("x", 0)), int(vp0.get("y", 0)), int(vp0.get("z", 0)))
+            int(vp0.get('x', 0)), int(vp0.get('y', 0)), int(vp0.get('z', 0)))
         self._position_1 = Vector3i(0, 0, 0) if vp1 is None else Vector3i(
-            int(vp1.get("x", 0)), int(vp1.get("y", 0)), int(vp1.get("z", 0)))
+            int(vp1.get('x', 0)), int(vp1.get('y', 0)), int(vp1.get('z', 0)))
 
     def get_logic_type(self) -> int:
         return self._logic_type
@@ -88,7 +88,7 @@ class Vehicle:
 
     @staticmethod
     def from_file(path: str) -> Vehicle:
-        with open(path, encoding="utf-8") as f:
+        with open(path, encoding='utf-8') as f:
             xml_text = f.read()
         v = Vehicle(xml_text)
         v._component_mods.append(os.path.splitext(path)[0])
@@ -111,21 +111,21 @@ class Vehicle:
         self._add_vehicle(self._root)
 
     def _add_vehicle(self, vehicle: ET.Element):
-        bodies = self._root.find("./bodies")
+        bodies = self._root.find('./bodies')
         assert bodies is not None
-        for body in vehicle.findall("./bodies/body"):
+        for body in vehicle.findall('./bodies/body'):
             if body not in bodies:
                 bodies.append(body)
             self._bodies.append(body)
-            for c in body.findall("./components/c"):
+            for c in body.findall('./components/c'):
                 self._add_component(VehicleComponent(c, body))
 
-        logic_node_links = self._root.find("./logic_node_links")
+        logic_node_links = self._root.find('./logic_node_links')
         if logic_node_links is None:
-            logic_node_links = ET.Element("logic_node_links")
+            logic_node_links = ET.Element('logic_node_links')
             self._root.append(logic_node_links)
 
-        for element in vehicle.findall("./logic_node_links/logic_node_link"):
+        for element in vehicle.findall('./logic_node_links/logic_node_link'):
             if element not in logic_node_links:
                 logic_node_links.append(element)
             self._add_logic_link(LogicNodeLink(element))
@@ -135,7 +135,7 @@ class Vehicle:
 
         element = component.get_element()
         body = component.get_body()
-        components = body.find("./components")
+        components = body.find('./components')
         assert components is not None
         if element not in components:
             components.append(element)
@@ -144,7 +144,7 @@ class Vehicle:
 
         position = component.get_position()
         if position in self._position_component_map:
-            raise ValueError(f"Multiple components at position {position}.")
+            raise ValueError(f'Multiple components at position {position}.')
         self._position_component_map[position] = component
 
         self._body_component_map[body].add(component)
@@ -164,7 +164,7 @@ class Vehicle:
                 self._remove_logic_link(link)
 
         body = component.get_body()
-        components = body.find("./components")
+        components = body.find('./components')
         assert components is not None
         components.remove(component.get_element())
         self._components.remove(component)
@@ -187,21 +187,21 @@ class Vehicle:
         position_1: Vector3i | Tuple3i
     ):
         element = ET.Element(
-            "logic_node_link",
-            {"type": str(LOGIC_TYPE_NUMBER[logic_type])}
+            'logic_node_link',
+            {'type': str(LOGIC_TYPE_NUMBER[logic_type])}
         )
         element.append(ET.Element(
-            "voxel_pos_0",
+            'voxel_pos_0',
             Vector3i(position_0).to_xml_dict()
         ))
         element.append(ET.Element(
-            "voxel_pos_1",
+            'voxel_pos_1',
             Vector3i(position_1).to_xml_dict()
         ))
 
-        logic_node_links = self._root.find("./logic_node_links")
+        logic_node_links = self._root.find('./logic_node_links')
         if logic_node_links is None:
-            logic_node_links = ET.Element("logic_node_links")
+            logic_node_links = ET.Element('logic_node_links')
             self._root.append(logic_node_links)
         logic_node_links.append(element)
 
@@ -230,7 +230,7 @@ class Vehicle:
         for mods_source in self._component_mods:
             if not os.path.isdir(mods_source):
                 continue
-            for file in glob.glob("*.bin", root_dir=mods_source):
+            for file in glob.glob('*.bin', root_dir=mods_source):
                 mod_components[os.path.splitext(file)[0]] = mods_source
 
         # 使用中の .bin を調べる
@@ -246,14 +246,14 @@ class Vehicle:
             os.makedirs(mods_dest, exist_ok=True)
             for (mods_source, name) in active_mod_components:
                 shutil.copy(
-                    os.path.join(mods_source, f"{name}.bin"),
-                    os.path.join(mods_dest, f"{name}.bin")
+                    os.path.join(mods_source, f'{name}.bin'),
+                    os.path.join(mods_dest, f'{name}.bin')
                 )
 
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(self._escape_multiline_attrs.restore(
-                ET.tostring(self._root, encoding="unicode")
+                ET.tostring(self._root, encoding='unicode')
             ))
 
     def get_components(
@@ -298,7 +298,7 @@ class Vehicle:
         components = self.get_components(**kwargs)
         if len(components) != 1:
             raise ValueError(
-                f"get_component should find 1 components, but {len(components)} found")
+                f'get_component should find 1 components, but {len(components)} found')
         else:
             return next(iter(components))
 
@@ -322,7 +322,7 @@ class Vehicle:
         value: str | int | float | bool,
         **kwargs: Unpack[_ComponentSelector]
     ):
-        if attr_name == "custom_name":
+        if attr_name == 'custom_name':
             self.set_custom_name(str(value), **kwargs)
 
         self.get_component(**kwargs).set_attribute(attr_name, value)
@@ -362,7 +362,7 @@ class Vehicle:
                 VehicleComponent(component.get_element(), body1))
         del self._body_component_map[body2]
 
-        bodies = self._root.find("./bodies")
+        bodies = self._root.find('./bodies')
         assert bodies is not None
         bodies.remove(body2)
 
@@ -372,7 +372,7 @@ class Vehicle:
 
         for m in itertools.chain.from_iterable(self._microprocessor_name_map.values()):
             for o in m.element.findall('./o/microprocessor_definition/group/components/c[@type="56"]/object[@script]'):
-                script = o.get("script")
+                script = o.get('script')
                 assert script is not None
                 script = self._escape_multiline_attrs.restore_value(script)
                 resolved = resolver.resolve_script(
@@ -380,6 +380,6 @@ class Vehicle:
                 if resolved is not None:
                     identifier = self._escape_multiline_attrs.add(
                         _remove_non_ascii(resolved))
-                    o.set("script", identifier)
+                    o.set('script', identifier)
                 else:
-                    o.set("script", _remove_non_ascii(script))
+                    o.set('script', _remove_non_ascii(script))
