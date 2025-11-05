@@ -1,9 +1,31 @@
+from dataclasses import dataclass
 import itertools
 from xml.etree import ElementTree as ET
+from lib.logic_type import LogicTypeName, LogicTypeNumber, LOGIC_TYPE_NAME
 from lib.matrix import Vector3i, Matrix3i
 
 Position = tuple[int, int, int]
 Box = tuple[Vector3i, Vector3i]
+
+
+@dataclass
+class MicroprocessorNode:
+    label: str
+    mode: int
+    type: LogicTypeNumber
+    position2d: tuple[int, int]
+
+    def is_output(self):
+        return self.mode == 0
+
+    def is_input(self):
+        return self.mode == 1
+
+    def type_name(self) -> LogicTypeName:
+        return LOGIC_TYPE_NAME[self.type]
+
+    def position(self) -> Vector3i:
+        return Vector3i(self.position2d[0], 0, self.position2d[1])
 
 
 class VehicleComponent:
@@ -54,6 +76,40 @@ class VehicleComponent:
     def get_microprocessor_name(self) -> str | None:
         return self._microprocessor_name
 
+    def get_microprocessor_definition(self):
+        mcdef = self.element.find('./o/microprocessor_definition')
+        if self.element.get('d') != 'microprocessor' or mcdef is None:
+            raise ValueError(
+                'Attempt to get microprocessor definition of non-microprocessor')
+
+        return mcdef
+
+    def get_microprocessor_nodes(self) -> list[MicroprocessorNode]:
+        mcdef = self.get_microprocessor_definition()
+
+        nodes: list[MicroprocessorNode] = []
+        for node in mcdef.findall('./nodes/n/node'):
+            position_el = node.find('./position')
+            if position_el is not None:
+                position = (
+                    int(position_el.get('x', 0)),
+                    int(position_el.get('z', 0))
+                )
+            else:
+                position = (0, 0)
+
+            nodes.append(MicroprocessorNode(
+                label=node.get('label', ''),
+                mode=int(node.get('mode', 0)),
+                type=int(node.get('type', 0)),  # type: ignore
+                position2d=position
+            ))
+
+        return nodes
+
+    def local_to_global_pos(self, local_pos: Vector3i):
+        return self._r.multiply_on_vector(local_pos) + self._position
+
     def voxels(self) -> list[Vector3i]:
         # マイコンは width と length からサイズを取る
         if self.element.get('d') == 'microprocessor':
@@ -94,10 +150,7 @@ class VehicleComponent:
         self.custom_name = new_custom_name
 
     def set_microprocessor_property(self, property_name: str, new_value: int | float | str):
-        mcdef = self.element.find('./o/microprocessor_definition')
-        if self.element.get('d') != 'microprocessor' or mcdef is None:
-            raise ValueError(
-                'Attempt to set microprocessor property for non-microprocessor')
+        mcdef = self.get_microprocessor_definition()
 
         count = 0
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 from collections import defaultdict
 import itertools
 import shutil
-import typing
 import copy
 import os
 import glob
-from typing import Any, Literal, TypeAlias, TypedDict, Unpack
+from typing import Any, TypeAlias, TypedDict, Unpack
 from xml.etree import ElementTree as ET
+from lib.logic_type import LOGIC_TYPE_NUMBER, LogicTypeName
 from lib.vehicle_component import VehicleComponent
 from lib.matrix import Vector3i
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
@@ -16,16 +16,6 @@ from lib.script_resolver import ScriptResolver
 StrPath: TypeAlias = str | os.PathLike[str]
 Tuple3i: TypeAlias = tuple[int, int, int]
 Box: TypeAlias = tuple[Vector3i | Tuple3i, Vector3i | Tuple3i]
-
-LOGIC_TYPES = {
-    "bool": 0,
-    "number": 1,
-    "electric": 4,
-    "composite": 5,
-    "video": 6,
-    "audio": 7,
-    "rope": 8
-}
 
 
 class _ComponentSelector(TypedDict, total=False):
@@ -192,13 +182,13 @@ class Vehicle:
 
     def add_logic_link(
         self,
-        logic_type: Literal["bool", "number", "electric", "composite", "video", "audio", "rope"],
+        logic_type: LogicTypeName,
         position_0: Vector3i | Tuple3i,
         position_1: Vector3i | Tuple3i
     ):
         element = ET.Element(
             "logic_node_link",
-            {"type": str(LOGIC_TYPES[logic_type])}
+            {"type": str(LOGIC_TYPE_NUMBER[logic_type])}
         )
         element.append(ET.Element(
             "voxel_pos_0",
@@ -227,10 +217,10 @@ class Vehicle:
         self._position_logic_map[link.get_position_0()].remove(link)
         self._position_logic_map[link.get_position_1()].remove(link)
 
-    def copy(self) -> typing.Self:
+    def copy(self) -> Vehicle:
         return copy.deepcopy(self)
 
-    def include_vehicle(self, other: typing.Self):
+    def include_vehicle(self, other: Vehicle):
         self._component_mods += other._component_mods
         self._add_vehicle(other._root)
 
