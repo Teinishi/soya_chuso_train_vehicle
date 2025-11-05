@@ -1,13 +1,15 @@
+import os
 from pathlib import Path
 import shutil
 import subprocess
 from detect_unused_components import detect_unused_components
-from lib.load_env import load_env
+from dotenv import load_dotenv
+
+load_dotenv()
 
 TARGET_FOLDERS = ['chuso3000']
 
-env = load_env()
-vehicles_path = Path(env['VEHICLES_PATH'])
+vehicles_path = Path(os.environ['VEHICLES_PATH'])
 root_path = Path.cwd()
 dist_path = root_path.joinpath('dist')
 
