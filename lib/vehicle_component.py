@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import itertools
+from typing import Literal
 from xml.etree import ElementTree as ET
 from lib.logic_type import LogicTypeName, LogicTypeNumber, LOGIC_TYPE_NAME
 from lib.matrix import Vector3i, Matrix3i
@@ -45,7 +46,7 @@ class VehicleComponent:
         o = element.find('./o')
         assert o is not None
         r = o.get('r')
-        self._r = Matrix3i(r) if r is not None else Matrix3i.identity()
+        self._r = Matrix3i.from_text(r) if r is not None else Matrix3i.identity()
         self.custom_name = o.get('custom_name')
 
         self._microprocessor_name = None
@@ -133,6 +134,24 @@ class VehicleComponent:
         # TODO: パーツ定義ファイルを見てボクセルを取得する
         # 現状は暫定的にパーツ原点のみを返す
         return [self.get_position()]
+    
+    def apply_transform(self, transform: Matrix3i):
+        self._r = transform.multiply(self._r)
+        if self._r.is_identity():
+            self.remove_attribute('r')
+        else:
+            self.set_attribute('r', self._r.to_text())
+
+    def rotate(self, axis: Literal['x', 'y', 'z'], count: int, pivot: Vector3i | None = None):
+        # todo: pivot を考慮して位置を変更
+        self.apply_transform(Matrix3i.rotation(axis, count))
+
+    def remove_attribute(self, attr_name: str) -> str| None:
+        o = self.element.find('./o')
+        assert o is not None
+        value = o.get(attr_name)
+        del o.attrib[attr_name]
+        return value
 
     def set_attribute(self, attr_name: str, value: str | int | float | bool):
         if value == False:
