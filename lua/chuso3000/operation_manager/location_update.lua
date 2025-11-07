@@ -18,7 +18,7 @@ local function get_rel(id, rel, rte)
 end
 
 local function find_route(from, to, inbound)
-	if not link_table[from] then return end
+	if not link_table[from*2 - b2i(inbound)] then return end
 	local trace, queue = {[from] = from}, {from}
 	for _ = 1, 100 do
 		for _, v in ipairs(link_table[queue[1]*2 - b2i(inbound)] or {})do
