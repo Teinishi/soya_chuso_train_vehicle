@@ -10,6 +10,10 @@ class Vector3i:
     y: int
     z: int
 
+    @staticmethod
+    def zero() -> Vector3i:
+        return Vector3i(0, 0, 0)
+
     def __init__(self, x: int | Vector3i | tuple[int, int, int], y: int | None = None, z: int | None = None):
         if isinstance(x, Vector3i):
             x, y, z = x.x, x.y, x.z
@@ -21,6 +25,12 @@ class Vector3i:
 
     def __add__(self, other: Vector3i) -> Vector3i:
         return Vector3i(self.x + other.x, self.y + other.y, self.z + other.z)
+    
+    def __sub__(self, other: Vector3i) -> Vector3i:
+        return Vector3i(self.x - other.x, self.y - other.y, self.z - other.z)
+    
+    def __mul__(self, scale: int) -> Vector3i:
+        return Vector3i(self.x * scale, self.y * scale, self.z * scale)
 
     def __repr__(self) -> str:
         return f'[{self.x}, {self.y}, {self.z}]'

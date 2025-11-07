@@ -142,9 +142,14 @@ class VehicleComponent:
         else:
             self.set_attribute('r', self._r.to_text())
 
-    def rotate(self, axis: Literal['x', 'y', 'z'], count: int, pivot: Vector3i | None = None):
-        # todo: pivot を考慮して位置を変更
-        self.apply_transform(Matrix3i.rotation(axis, count))
+    def rotate(self, axis: Literal['x', 'y', 'z'], count: int):
+        r = Matrix3i.rotation(axis, count)
+        self.apply_transform(r)
+        '''
+        if pivot is not None:
+            p = r.multiply_on_vector(self._position - pivot)
+            self._position = pivot + p
+        '''
 
     def remove_attribute(self, attr_name: str) -> str| None:
         o = self.element.find('./o')
