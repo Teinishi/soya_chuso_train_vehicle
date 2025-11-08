@@ -1,12 +1,13 @@
 from dataclasses import dataclass
 import itertools
-from typing import Literal
 from xml.etree import ElementTree as ET
 from lib.logic_type import LogicTypeName, LogicTypeNumber, LOGIC_TYPE_NAME
 from lib.matrix import Vector3i, Matrix3i
 
 Position = tuple[int, int, int]
 Box = tuple[Vector3i, Vector3i]
+
+DEFAULT_R = '0,0,1,-1,0,0,0,-1,0'
 
 
 @dataclass
@@ -34,6 +35,7 @@ class VehicleComponent:
     _body: ET.Element
     _position: Vector3i
     _d: str
+    _t: int
     _r: Matrix3i
     custom_name: str | None
     _microprocessor_name: str | None
@@ -43,10 +45,10 @@ class VehicleComponent:
         self._body = body
 
         self._d = element.get('d', '01_block')
+        self._t = int(element.get('t', '0'))
         o = element.find('./o')
         assert o is not None
-        r = o.get('r')
-        self._r = Matrix3i.from_text(r) if r is not None else Matrix3i.identity()
+        self._r = Matrix3i.from_text(o.get('r', DEFAULT_R))
         self.custom_name = o.get('custom_name')
 
         self._microprocessor_name = None
@@ -108,10 +110,32 @@ class VehicleComponent:
 
         return nodes
 
-    def local_to_global_pos(self, local_pos: Vector3i):
-        return self._r.multiply_on_vector(local_pos) + self._position
+    def get_mirror_matrix(self) -> Matrix3i:
+        t = self._t
+        return Matrix3i.mirror(x=t & 1 != 0, y=t & 2 != 0, z=t & 4 != 0)
 
-    def voxels(self) -> list[Vector3i]:
+    def get_rotation_matrix(self) -> Matrix3i:
+        return self._r
+
+    def get_transform_matrix(self) -> Matrix3i:
+        return self._r.transpose().multiply(self.get_mirror_matrix())
+
+    def set_transform_matrix(self, transform: Matrix3i):
+        self._r = transform.multiply(
+            self.get_mirror_matrix().transpose()).transpose()
+        if self._r == Matrix3i.from_text(DEFAULT_R):
+            self.remove_attribute('r')
+        else:
+            self.set_attribute('r', self._r.to_text())
+
+    def apply_transform(self, transform: Matrix3i):
+        self.set_transform_matrix(
+            transform.multiply(self.get_transform_matrix()))
+
+    def local_to_global_pos(self, local_pos: Vector3i) -> Vector3i:
+        return self.get_transform_matrix().multiply_on_vector(local_pos) + self._position
+
+    def voxels(self, local: bool = False) -> list[Vector3i]:
         # マイコンは width と length からサイズを取る
         if self.element.get('d') == 'microprocessor':
             mcdef = self.element.find('./o/microprocessor_definition')
@@ -125,33 +149,39 @@ class VehicleComponent:
 
             result: list[Vector3i] = []
             for x, z in itertools.product(range(width), range(length)):
-                result.append(
-                    self._r.multiply_on_vector(Vector3i(x, 0, z))
-                    + self.get_position()
-                )
+                local_pos = Vector3i(x, 0, z)
+                if local:
+                    result.append(local_pos)
+                else:
+                    result.append(
+                        self._r.transpose().multiply_on_vector(local_pos)
+                        + self._position
+                    )
             return result
 
         # TODO: パーツ定義ファイルを見てボクセルを取得する
         # 現状は暫定的にパーツ原点のみを返す
-        return [self.get_position()]
-    
-    def apply_transform(self, transform: Matrix3i):
-        self._r = transform.multiply(self._r)
-        if self._r.is_identity():
-            self.remove_attribute('r')
+        if local:
+            return [Vector3i.zero()]
         else:
-            self.set_attribute('r', self._r.to_text())
+            return [self._position]
 
-    def rotate(self, axis: Literal['x', 'y', 'z'], count: int):
-        r = Matrix3i.rotation(axis, count)
-        self.apply_transform(r)
-        '''
-        if pivot is not None:
-            p = r.multiply_on_vector(self._position - pivot)
-            self._position = pivot + p
-        '''
+    def set_position(self, new_position: Vector3i):
+        self._position = new_position
 
-    def remove_attribute(self, attr_name: str) -> str| None:
+        o = self.element.find('./o')
+        assert o is not None
+        vp = o.find('./vp')
+        if new_position != Vector3i.zero():
+            if vp is None:
+                vp = ET.Element('vp', new_position.xml_attrib())
+                o.append(vp)
+            else:
+                vp.attrib = new_position.xml_attrib()
+        elif vp is not None:
+            o.remove(vp)
+
+    def remove_attribute(self, attr_name: str) -> str | None:
         o = self.element.find('./o')
         assert o is not None
         value = o.get(attr_name)

@@ -5,11 +5,11 @@ import shutil
 import copy
 import os
 import glob
-from typing import Any, TypeAlias, TypedDict, Unpack
+from typing import Any, Literal, TypeAlias, TypedDict, Unpack
 from xml.etree import ElementTree as ET
 from lib.logic_type import LOGIC_TYPE_NUMBER, LogicTypeName
 from lib.vehicle_component import VehicleComponent
-from lib.matrix import Vector3i
+from lib.matrix import Matrix3i, AxisName, Vector3i
 from lib.escape_multiline_attributes import EscapeMultilineAttributes
 from lib.script_resolver import ScriptResolver
 
@@ -49,28 +49,49 @@ def _get_box_positions(box: Box):
 
 class LogicNodeLink:
     _element: ET.Element
-    _logic_type: int
-    _position_0: Vector3i
-    _position_1: Vector3i
+    logic_type: int
+    position_0: Vector3i
+    position_1: Vector3i
 
     def __init__(self, element: ET.Element):
         vp0 = element.find('voxel_pos_0')
         vp1 = element.find('voxel_pos_1')
         self._element = element
-        self._logic_type = int(element.get('type', 0))
-        self._position_0 = Vector3i(0, 0, 0) if vp0 is None else Vector3i(
-            int(vp0.get('x', 0)), int(vp0.get('y', 0)), int(vp0.get('z', 0)))
-        self._position_1 = Vector3i(0, 0, 0) if vp1 is None else Vector3i(
-            int(vp1.get('x', 0)), int(vp1.get('y', 0)), int(vp1.get('z', 0)))
+        self.logic_type = int(element.get('type', 0))
 
-    def get_logic_type(self) -> int:
-        return self._logic_type
+        if vp0 is None:
+            self.position_0 = Vector3i.zero()
+        else:
+            self.position_0 = Vector3i(
+                int(vp0.get('x', '0')),
+                int(vp0.get('y', '0')),
+                int(vp0.get('z', '0'))
+            )
+        if vp1 is None:
+            self.position_1 = Vector3i.zero()
+        else:
+            self.position_1 = Vector3i(
+                int(vp1.get('x', '0')),
+                int(vp1.get('y', '0')),
+                int(vp1.get('z', '0'))
+            )
 
-    def get_position_0(self) -> Vector3i:
-        return self._position_0
+    def set_position(self, i: Literal[0, 1], new_position: Vector3i):
+        if i == 0:
+            self.position_0 = new_position
+        else:
+            self.position_1 = new_position
 
-    def get_position_1(self) -> Vector3i:
-        return self._position_1
+        tag_name = f'voxel_pos_{i}'
+        vp = self._element.find(tag_name)
+        if new_position != Vector3i.zero():
+            if vp is None:
+                vp = ET.Element(tag_name, new_position.xml_attrib())
+                self._element.append(vp)
+            else:
+                vp.attrib = new_position.xml_attrib()
+        elif vp is not None:
+            self._element.remove(vp)
 
 
 class Vehicle:
@@ -110,6 +131,34 @@ class Vehicle:
 
         self._add_vehicle(self._root)
 
+    def _refresh_map_cache(self):
+        self._position_component_map = {}
+        self._body_component_map = defaultdict(set)
+        self._custom_name_map = defaultdict(set)
+        self._microprocessor_name_map = defaultdict(set)
+        self._position_logic_map = defaultdict(set)
+
+        for component in self._components:
+            for p in component.voxels():
+                if p in self._position_component_map:
+                    raise ValueError(f'Multiple components at position {p}.')
+                self._position_component_map[p] = component
+
+            self._body_component_map[component.get_body()].add(component)
+
+            custom_name = component.get_custom_name()
+            if custom_name is not None:
+                self._custom_name_map[custom_name].add(component)
+
+            microprocessor_name = component.get_microprocessor_name()
+            if microprocessor_name is not None:
+                self._microprocessor_name_map[microprocessor_name]\
+                    .add(component)
+
+        for link in self._logic_links:
+            self._position_logic_map[link.position_0].add(link)
+            self._position_logic_map[link.position_1].add(link)
+
     def _add_vehicle(self, vehicle: ET.Element):
         bodies = self._root.find('./bodies')
         assert bodies is not None
@@ -142,10 +191,11 @@ class Vehicle:
 
         self._components.add(component)
 
-        position = component.get_position()
-        if position in self._position_component_map:
-            raise ValueError(f'Multiple components at position {position}.')
-        self._position_component_map[position] = component
+        for p in component.voxels():
+            if p in self._position_component_map:
+                raise ValueError(
+                    f'Multiple components at position {p}.')
+            self._position_component_map[p] = component
 
         self._body_component_map[body].add(component)
 
@@ -168,7 +218,8 @@ class Vehicle:
         assert components is not None
         components.remove(component.get_element())
         self._components.remove(component)
-        del self._position_component_map[component.get_position()]
+        for p in component.voxels():
+            assert self._position_component_map.pop(p) == component
         self._body_component_map[body].remove(component)
 
         custom_name = component.get_custom_name()
@@ -179,6 +230,27 @@ class Vehicle:
         if microprocessor_name is not None:
             self._microprocessor_name_map[microprocessor_name]\
                 .remove(component)
+
+    def _add_logic_link(self, link: LogicNodeLink):
+        self._logic_links.add(link)
+        self._position_logic_map[link.position_0].add(link)
+        self._position_logic_map[link.position_1].add(link)
+
+    def _remove_logic_link(self, link: LogicNodeLink):
+        self._logic_links.remove(link)
+        self._position_logic_map[link.position_0].remove(link)
+        self._position_logic_map[link.position_1].remove(link)
+
+    def _change_logic_link_pos(self, link: LogicNodeLink, *, new_position_0: Vector3i | None = None, new_position_1: Vector3i | None = None):
+        if new_position_0 is not None:
+            self._position_logic_map[link.position_0].remove(link)
+            self._position_logic_map[new_position_0].add(link)
+            link.position_0 = new_position_0
+
+        if new_position_1 is not None:
+            self._position_logic_map[link.position_1].remove(link)
+            self._position_logic_map[new_position_1].add(link)
+            link.position_1 = new_position_1
 
     def add_logic_link(
         self,
@@ -192,11 +264,11 @@ class Vehicle:
         )
         element.append(ET.Element(
             'voxel_pos_0',
-            Vector3i(position_0).to_xml_dict()
+            Vector3i(position_0).xml_attrib()
         ))
         element.append(ET.Element(
             'voxel_pos_1',
-            Vector3i(position_1).to_xml_dict()
+            Vector3i(position_1).xml_attrib()
         ))
 
         logic_node_links = self._root.find('./logic_node_links')
@@ -207,15 +279,32 @@ class Vehicle:
 
         self._add_logic_link(LogicNodeLink(element))
 
-    def _add_logic_link(self, link: LogicNodeLink):
-        self._logic_links.add(link)
-        self._position_logic_map[link.get_position_0()].add(link)
-        self._position_logic_map[link.get_position_1()].add(link)
+    def translate(self, delta: Vector3i | Tuple3i):
+        delta = Vector3i(delta)
+        for component in self._components:
+            component.set_position(component.get_position() + delta)
 
-    def _remove_logic_link(self, link: LogicNodeLink):
-        self._logic_links.remove(link)
-        self._position_logic_map[link.get_position_0()].remove(link)
-        self._position_logic_map[link.get_position_1()].remove(link)
+        self._refresh_map_cache()
+
+    def rotate(self, axis: AxisName, count: int, center: Vector3i | Tuple3i | None = None):
+        if center is None:
+            center = Vector3i.zero()
+        else:
+            center = Vector3i(center)
+
+        r = Matrix3i.rotation(axis, -count)
+        for component in self._components:
+            component.apply_transform(r)
+            component.set_position(r.multiply_on_vector(
+                component.get_position() - center) + center)
+
+        for link in self._logic_links:
+            link.set_position(
+                0, r.multiply_on_vector(link.position_0 - center) + center)
+            link.set_position(
+                1, r.multiply_on_vector(link.position_1 - center) + center)
+
+        self._refresh_map_cache()
 
     def copy(self) -> Vehicle:
         return copy.deepcopy(self)

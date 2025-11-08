@@ -1,7 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import itertools
-from typing import Literal
+from typing import Literal, TypeAlias
+
+AxisName: TypeAlias = Literal['x', 'y', 'z']
 
 
 @dataclass(frozen=True)
@@ -25,17 +27,17 @@ class Vector3i:
 
     def __add__(self, other: Vector3i) -> Vector3i:
         return Vector3i(self.x + other.x, self.y + other.y, self.z + other.z)
-    
+
     def __sub__(self, other: Vector3i) -> Vector3i:
         return Vector3i(self.x - other.x, self.y - other.y, self.z - other.z)
-    
+
     def __mul__(self, scale: int) -> Vector3i:
         return Vector3i(self.x * scale, self.y * scale, self.z * scale)
 
     def __repr__(self) -> str:
         return f'[{self.x}, {self.y}, {self.z}]'
 
-    def to_xml_dict(self) -> dict[str, str]:
+    def xml_attrib(self) -> dict[str, str]:
         return {
             'x': str(self.x),
             'y': str(self.y),
@@ -57,14 +59,14 @@ class Matrix3i:
     @staticmethod
     def identity() -> Matrix3i:
         return Matrix3i([1, 0, 0, 0, 1, 0, 0, 0, 1])
-    
+
     @staticmethod
-    def rotation(axis: Literal['x', 'y', 'z'], count: int) -> Matrix3i:
+    def rotation(axis: AxisName, count: int) -> Matrix3i:
         axis_n = 'xyz'.index(axis)
         axis_n1 = (axis_n + 1) % 3
         axis_n2 = (axis_n + 2) % 3
-        c = [1, 0, -1, 0][count % 4] # cos(count * 90deg)
-        s = [0, 1, 0, -1][count % 4] # sin(count * 90deg)
+        c = [1, 0, -1, 0][count % 4]  # cos(count * 90deg)
+        s = [0, 1, 0, -1][count % 4]  # sin(count * 90deg)
 
         m = Matrix3i.identity()
         m._mat[3 * axis_n1 + axis_n1] = c
@@ -72,10 +74,24 @@ class Matrix3i:
         m._mat[3 * axis_n2 + axis_n1] = s
         m._mat[3 * axis_n2 + axis_n2] = c
         return m
-    
+
+    @staticmethod
+    def mirror(*, x: bool = False, y: bool = False, z: bool = False) -> Matrix3i:
+        m = Matrix3i.identity()
+        if x:
+            m._mat[0] = -1
+        if y:
+            m._mat[4] = -1
+        if z:
+            m._mat[8] = -1
+        return m
+
     def is_identity(self) -> bool:
         return self == Matrix3i.identity()
-    
+
+    def transpose(self):
+        return Matrix3i([self._mat[0], self._mat[3], self._mat[6], self._mat[1], self._mat[4], self._mat[7], self._mat[2], self._mat[5], self._mat[8]])
+
     def multiply(self, other: Matrix3i) -> Matrix3i:
         new_mat = [0] * 9
         for i, j, k in itertools.product(range(3), repeat=3):

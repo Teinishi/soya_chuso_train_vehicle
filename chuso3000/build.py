@@ -149,7 +149,9 @@ vehicle_tc_jsms.set_microprocessor_property(
 vehicle_tc_jsms.set_microprocessor_property(
     'Default', 'Front', microprocessor_name='Direction Switch')
 
-# TODO: Tc車を全選択して180度回転
+# Tc車を全選択して180度回転
+for v in [vehicle_tc, vehicle_tc_jsms]:
+    v.rotate('y', 2)
 
 # 書き出し
 resolver = ScriptResolver()
