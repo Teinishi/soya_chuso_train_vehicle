@@ -3,7 +3,6 @@ link_table = {} -- @require lua/route_data_lua.py link_table
 stop_type_table = {} -- @require lua/route_data_lua.py stop_type_table
 coordinate_table = {} -- @require lua/route_data_lua.py coordinate_table
 not_for_service = {} -- @require lua/route_data_lua.py not_for_service
-jsms_route = {} -- @require lua/route_data_lua.py jsms_route
 
 local function b2i(f)
 	return f and 1 or 0
@@ -42,25 +41,7 @@ local function find_route(from, to, inbound)
 	end
 end
 
-local function get_jsms_route()
-	local route = {inbound = true}
-	for _, v in ipairs(jsms_route) do
-		local t = v[1]
-		for _, w in ipairs(v) do
-			if w == id1 then
-				t = w
-				break
-			end
-		end
-		table.insert(route, t)
-	end
-	return route
-end
-
-local function get_route(origin, destination, is_jsms)
-	if is_jsms then
-		get_jsms_route()
-	end
+local function get_route(origin, destination)
 	local rte_in, rte_out = find_route(origin, destination, true), find_route(origin, destination)
 	if rte_in and rte_out then
 		return #rte_in < #rte_out and rte_in or rte_out
@@ -81,12 +62,7 @@ function onTick()
 
 	local train_type, origin, destination = op_code>>12&15, op_code>>6&63, op_code&63
 	local stby_origin, stby_destination = stby_op_code>>6&63, stby_op_code&63
-	local is_jsms_auto, is_manual, status, id1 = loc_code>>17&1 ~= 0, loc_code>>16&1 ~= 0, loc_code>>12&3, loc_code>>6&63
-
-	local is_jsms = id1 >= 32
-	local set_jsms_v = gI(12)
-	local set_jsms_sts, set_jsms_id1 = set_jsms_v>>6, set_jsms_v&63
-	local set_jsms = set_jsms_v ~= 0
+	local is_manual, status, id1 = loc_code>>16&1 ~= 0, loc_code>>12&3, loc_code>>6&63
 
 	local function distance(i, j)
 		local a, b = coordinate_table[i], {gps_x,gps_y}
@@ -111,7 +87,7 @@ function onTick()
 	end
 
 	local set_location_code = nil
-	local function set_location(new_status, new_id1, rte, man, jsms)
+	local function set_location(new_status, new_id1, rte, man)
 		local f, nxstp = false, 0
 		for _, v in ipairs(rte) do
 			f = f or new_status == 2 and v == new_id1
@@ -121,7 +97,7 @@ function onTick()
 			end
 			f = f or v == new_id1
 		end
-		set_location_code = b2i(jsms)<<17 | b2i(man)<<16 | b2i(rte.inbound)<<15 | b2i(rte.outbound)<<14 | (new_status&3)<<12 | (new_id1&63)<<6 | nxstp&63
+		set_location_code = b2i(man)<<16 | b2i(rte.inbound)<<15 | b2i(rte.outbound)<<14 | (new_status&3)<<12 | (new_id1&63)<<6 | nxstp&63
 	end
 
 	local nearest_id = nil
@@ -174,10 +150,7 @@ function onTick()
 		end
 		set_location(new_status, new_id1, route, is_manual)
 
-	elseif not is_manual and set_jsms then
-		set_location(set_jsms_sts, set_jsms_id1, get_jsms_route(), false, true)
-
-	elseif not is_jsms_auto and (set_auto or (update_auto or attempt_swap or update_nearest) and not is_manual) then
+	elseif set_auto or (update_auto or attempt_swap or update_nearest) and not is_manual then
 		local route = get_route(origin, destination)
 		nearest()
 		if door and nearest_id ~= 0 or stopped and not_for_service[nearest_id] then
